@@ -6,6 +6,25 @@ set -Eeuo pipefail
 PROJECT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 cd "$PROJECT_DIR"
 
+# Root sistem Python'u kullanıcı paketlerini (~/.local) görmez. Bu yüzden
+# proje-özel venv'i kullanıcı olarak, sudo'dan ÖNCE hazırla.
+if [[ -z "${PYTHON_BIN:-}" ]]; then
+  if [[ ! -x "$PROJECT_DIR/.venv/bin/python" ]]; then
+    printf 'Python sanal ortamı oluşturuluyor: %s/.venv\n' "$PROJECT_DIR"
+    if ! python3 -m venv "$PROJECT_DIR/.venv"; then
+      printf 'HATA: venv oluşturulamadı. python3-venv paketini kurun.\n' >&2
+      exit 1
+    fi
+  fi
+  if ! "$PROJECT_DIR/.venv/bin/python" -c \
+      'import fastapi, uvicorn, sqlmodel, aiosqlite, reportlab, impacket, networkx, ldap3, scapy' \
+      2>/dev/null; then
+    printf 'Bağımlılıklar kullanıcı venv ortamına kuruluyor…\n'
+    "$PROJECT_DIR/.venv/bin/python" -m pip install -r "$PROJECT_DIR/requirements.txt"
+  fi
+  PYTHON_BIN="$PROJECT_DIR/.venv/bin/python"
+fi
+
 if (( EUID != 0 )); then
   exec sudo --preserve-env=PATH,PYTHON_BIN,HOST,PORT,RELOAD,API_TOKEN,EXPLOIT_ENABLED,EXPLOIT_ALLOWLIST,EXPLOIT_REQUIRE_CONFIRM,EXPLOIT_CLEANUP,TICKETS_RETENTION_DAYS,DATABASE_URL \
     bash "$0" "$@"

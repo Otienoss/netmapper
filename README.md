@@ -36,8 +36,10 @@ chmod +x start_netmapper.sh
 ```
 
 Script root değilse kendisini `sudo` ile yeniden başlatır, `.env` dosyasını okur
-ve varsayılan olarak yalnızca **`127.0.0.1:8000`** adresini dinler. Geliştirme
-için `RELOAD=1 ./start_netmapper.sh`, farklı adres/port için
+ve varsayılan olarak yalnızca **`127.0.0.1:8000`** adresini dinler. İlk
+çalıştırmada `.venv` sanal ortamını oluşturup `requirements.txt` bağımlılıklarını
+kullanıcı olarak kurar; root aynı venv Python'unu kullanır. Geliştirme için
+`RELOAD=1 ./start_netmapper.sh`, farklı adres/port için
 `HOST=... PORT=... ./start_netmapper.sh` kullanılabilir.
 
 > **Güvenlik:** Tüm uygulamayı root çalıştırmak saldırı yüzeyini büyütür.
