@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Yeni Tarama</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  body { margin:0; background:#0B0F14; font-family:'Inter',sans-serif; color:#E6EDF3; }
+  .mono { font-family:'JetBrains Mono',monospace; }
+  a { color:#2DD4BF; text-decoration:none; }
+  input,select { background:#0B0F14; border:1px solid #1F2A35; color:#E6EDF3; border-radius:8px; padding:10px 12px; font-size:13px; font-family:'JetBrains Mono',monospace; }
+  input:focus { outline:1px solid #2DD4BF; }
+  label { font-size:12px; color:#8B98A5; display:block; margin-bottom:6px; }
+  input[type=radio] { accent-color:#2DD4BF; }
+  input::placeholder { color:#5b6671; }
+  .profile { display:flex; align-items:center; gap:10px; padding:12px; border:1px solid #1F2A35; border-radius:8px; cursor:pointer; transition:border-color .15s, background .15s; }
+  .profile:hover { border-color:#2F3B47; }
+  .profile.active { border-color:#2DD4BF; background:#0F2320; }
+  .profile input { width:14px; height:14px; padding:0; }
+  .sec-title { font-size:14px; font-weight:600; border-left:3px solid #2DD4BF; padding-left:9px; }
+  .badge { font-size:11px; padding:3px 8px; border-radius:6px; }
+  .b-wait  { color:#8B98A5; background:#1A2129; }
+  .b-run   { color:#F59E0B; background:#241B0A; }
+  .b-done  { color:#22C55E; background:#0F2419; }
+  .b-err   { color:#EF4444; background:#2A1212; }
+  .track { height:6px; background:#0B0F14; border-radius:4px; }
+  .track > div { height:100%; width:0; background:#1F2A35; border-radius:4px; transition:width .4s; }
+  #form-err { color:#EF4444; font-size:12px; white-space:pre-line; }
+</style>
+</head>
+<body>
+<div class="panel-wrap" style="width:100%;max-width:1360px;margin:0 auto;box-sizing:border-box;padding:24px 28px;display:flex;flex-direction:column;gap:18px">
+
+  <div class="panel-head" style="display:flex;justify-content:space-between;align-items:center">
+    <div class="brand" style="display:flex;align-items:center;gap:10px">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2DD4BF" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M12 2v4M12 18v4M4.9 4.9l2.8 2.8M16.3 16.3l2.8 2.8M2 12h4M18 12h4M4.9 19.1l2.8-2.8M16.3 7.7l2.8-2.8"></path></svg>
+      <span style="font-size:17px;font-weight:700">NetMapper</span>
+    </div>
+    <nav style="display:flex;gap:4px">
+      <a href="/static/panels/dashboard.html" style="padding:8px 14px;border-radius:8px;font-size:13px;color:#8B98A5">Dashboard</a>
+      <span style="padding:8px 14px;border-radius:8px;background:#121820;border:1px solid #2DD4BF;font-size:13px">Yeni Tarama</span>
+      <a href="/static/panels/host_envanteri.html" style="padding:8px 14px;border-radius:8px;font-size:13px;color:#8B98A5">Envanter</a>
+      <span title="yakında" style="padding:8px 14px;border-radius:8px;font-size:13px;color:#5b6671">Raporlar</span>
+      <span title="yakında" style="padding:8px 14px;border-radius:8px;font-size:13px;color:#5b6671">Ayarlar</span>
+    </nav>
+    <div style="width:120px"></div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+
+    <!-- Sol: parametreler -->
+    <form id="scan-form" style="background:#121820;border:1px solid #1F2A35;border-radius:12px;padding:24px;display:flex;flex-direction:column;gap:18px">
+      <div class="sec-title">Tarama Parametreleri</div>
+
+      <div>
+        <label for="subnet">Hedef Subnet (CIDR) — tek IP de olabilir</label>
+        <input id="subnet" type="text" placeholder="192.168.1.0/24   veya   192.168.1.10" style="width:100%;box-sizing:border-box" required>
+      </div>
+
+      <div>
+        <label>Tarama Profili</label>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <label class="profile" for="p-quick">
+            <input id="p-quick" type="radio" name="p" value="quick" style="width:14px;height:14px">
+            <div><div style="font-size:13px;font-weight:500">Hızlı Keşif</div><div style="font-size:11px;color:#8B98A5">Sadece netdiscover — canlı host listesi</div></div>
+          </label>
+          <label class="profile active" for="p-full">
+            <input id="p-full" type="radio" name="p" value="full" checked="" style="width:14px;height:14px">
+            <div><div style="font-size:13px;font-weight:500">Tam Tarama</div><div style="font-size:11px;color:#8B98A5">netdiscover + nmap -sV (port &amp; servis tespiti)</div></div>
+          </label>
+          <label class="profile" for="p-custom">
+            <input id="p-custom" type="radio" name="p" value="custom" style="width:14px;height:14px">
+            <div><div style="font-size:13px;font-weight:500">Özel</div><div style="font-size:11px;color:#8B98A5">Port aralığını kendin belirle</div></div>
+          </label>
+        </div>
+      </div>
+
+      <div>
+        <label for="ports">Kritik Port Listesi <span id="ports-hint" style="color:#5b6671">(yalnızca “Özel” profilde kullanılır)</span></label>
+        <input id="ports" type="text" value="21,22,23,25,80,161,443,8080" style="width:100%;box-sizing:border-box">
+      </div>
+
+      <div id="form-err"></div>
+
+      <button id="start-btn" type="submit" style="background:#2DD4BF;color:#0B0F14;border:none;padding:12px;border-radius:8px;font-weight:600;font-size:13px;cursor:pointer;margin-top:4px">Taramayı Başlat</button>
+      <div class="hint" style="font-size:11px;color:#8B98A5">CIDR (örn. 192.168.1.0/24) veya tek IP · en fazla /24 genişlik · yalnızca izin verdiğiniz ağlarda kullanın.</div>
+    </form>
+    <!-- Sağ: canlı ilerleme (WebSocket) -->
+    <div style="background:#121820;border:1px solid #1F2A35;border-radius:12px;padding:24px;display:flex;flex-direction:column;gap:16px">
+      <div class="sec-title">Canlı İlerleme <span style="font-weight:400;color:#8B98A5;font-size:11px">· WebSocket</span></div>
+
+      <div class="mono" id="job-id" style="font-size:12px;color:#8B98A5">job_id: —</div>
+
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <span style="font-size:13px">1. Host keşfi (netdiscover)</span>
+          <span class="badge b-wait" id="st1-badge">Bekliyor</span>
+        </div>
+        <div class="track"><div id="st1-bar"></div></div>
+
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px">
+          <span style="font-size:13px">2. Port/servis taraması (nmap)</span>
+          <span class="badge b-wait" id="st2-badge">Bekliyor</span>
+        </div>
+        <div class="track"><div id="st2-bar"></div></div>
+
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px">
+          <span style="font-size:13px">3. Normalizasyon &amp; kayıt</span>
+          <span class="badge b-wait" id="st3-badge">Bekliyor</span>
+        </div>
+        <div class="track"><div id="st3-bar"></div></div>
+      </div>
+
+      <div style="background:#0B0F14;border-radius:8px;padding:12px;margin-top:6px;flex:1;min-height:150px">
+        <div id="logs" class="mono" style="font-size:11px;color:#8B98A5;line-height:1.8;max-height:240px;overflow-y:auto">[—] Tarama başlamadı…</div>
+      </div>
+
+      <div id="done-actions" style="display:none;gap:8px">
+        <a id="pdf-link" class="btn" href="#" target="_blank" style="background:#2DD4BF;color:#0B0F14;padding:10px 16px;border-radius:8px;font-weight:600;font-size:13px;display:inline-block">📄 PDF Raporu</a>
+        <a href="/static/panels/host_envanteri.html" data-go="host_envanteri" style="background:#121820;border:1px solid #1F2A35;color:#E6EDF3;padding:10px 16px;border-radius:8px;font-weight:600;font-size:13px;display:inline-block">Host Envanteri →</a>
+        <a href="/static/panels/dashboard.html" data-go="dashboard" style="background:#121820;border:1px solid #1F2A35;color:#E6EDF3;padding:10px 16px;border-radius:8px;font-weight:600;font-size:13px;display:inline-block">Dashboard →</a>
+      </div>
+    </div>
+
+  </div>
+</div>
+<script>
+"use strict";
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g,
+  c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+
+const form = document.getElementById("scan-form");
+const startBtn = document.getElementById("start-btn");
+const formErr = document.getElementById("form-err");
+const jobEl = document.getElementById("job-id");
+const logsEl = document.getElementById("logs");
+const doneActions = document.getElementById("done-actions");
+const pdfLink = document.getElementById("pdf-link");
+
+let currentJob = null, finished = false, fallbackTimer = null, startedAt = 0;
+
+// profil seçimi: görsel vurgu
+document.querySelectorAll('input[name="p"]').forEach(r =>
+  r.addEventListener("change", () =>
+    document.querySelectorAll(".profile").forEach(l =>
+      l.classList.toggle("active", l.querySelector("input").checked))));
+
+function humanError(data) {
+  if (!data) return "Bilinmeyen hata";
+  if (typeof data.detail === "string") return data.detail;
+  if (Array.isArray(data.detail))
+    return data.detail.map(d => d.msg || JSON.stringify(d)).join("\n");
+  return JSON.stringify(data);
+}
+
+function setStage(n, text, cls, pct) {
+  const badge = document.getElementById(`st${n}-badge`);
+  badge.textContent = text;
+  badge.className = "badge " + cls;
+  const bar = document.getElementById(`st${n}-bar`);
+  bar.style.width = Math.max(0, Math.min(100, pct)) + "%";
+  bar.style.background =
+    cls === "b-done" ? "#22C55E" : cls === "b-err" ? "#EF4444" :
+    cls === "b-run" ? "#F59E0B" : "#1F2A35";
+}
+
+function resetStages() {
+  for (let i = 1; i <= 3; i++) setStage(i, "Bekliyor", "b-wait", 0);
+  doneActions.style.display = "none";
+  logsEl.innerHTML = "[—] Tarama başlatıldı, ilk aşama bekleniyor…";
+}
+
+function render(state) {
+  const st = state.status;
+  const p = state.progress || {};
+  const total = p.hosts_total || 0, scanned = p.hosts_scanned || 0;
+  const pct = total ? Math.round((scanned / total) * 100) : 0;
+
+  if (st === "pending") {
+    setStage(1, "Sırada", "b-wait", 0);
+  } else if (st === "discovering") {
+    setStage(1, "Keşif yapılıyor…", "b-run", 50);
+  } else if (st === "scanning") {
+    setStage(1, "Tamamlandı", "b-done", 100);
+    setStage(2, total ? `${scanned} / ${total} host` : "Taranıyor…",
+             "b-run", total ? pct : 15);
+  } else if (st === "normalizing") {
+    setStage(1, "Tamamlandı", "b-done", 100);
+    setStage(2, total ? `${total} / ${total} host` : "Tamamlandı", "b-done", 100);
+    setStage(3, "Kaydediliyor…", "b-run", 70);
+  } else if (st === "done") {
+    finished = true;
+    for (let i = 1; i <= 3; i++) setStage(i, "Tamamlandı", "b-done", 100);
+    pdfLink.href = `/api/v1/scans/${state.job_id}/report`;
+    doneActions.style.display = "flex";
+  } else if (st === "error") {
+    finished = true;
+    // çalışan/bekleyen aşamaları hata olarak işaretle, tamamlananlar kalsın
+    for (let i = 1; i <= 3; i++) {
+      const b = document.getElementById(`st${i}-badge`);
+      if (b.className.includes("b-run") || b.className.includes("b-wait"))
+        setStage(i, "Hata", "b-err", i === 1 ? 50 : (i === 2 ? pct : 70));
+    }
+  }
+
+  if (state.logs && state.logs.length) {
+    logsEl.innerHTML = state.logs.map(l => esc(l)).join("<br>");
+    logsEl.scrollTop = logsEl.scrollHeight;
+  }
+  if (state.error) {
+    logsEl.innerHTML += `<br><span style="color:#EF4444">${esc(state.error)}</span>`;
+  }
+}
+
+// ------------------------------------------------------------ WebSocket
+function connectWS(wsUrl) {
+  const proto = location.protocol === "https:" ? "wss" : "ws";
+  let ws;
+  try {
+    ws = new WebSocket(`${proto}://${location.host}${wsUrl}`);
+  } catch (e) {
+    startFallbackPolling();
+    return;
+  }
+  ws.onmessage = (ev) => {
+    try { render(JSON.parse(ev.data)); }
+    catch (e) { console.error("ws parse:", e); }
+  };
+  ws.onclose = () => {
+    // terminal durum görülmeden kapandıysa polling'e düş
+    if (!finished) startFallbackPolling();
+  };
+  ws.onerror = () => { /* onclose tetiklenecek */ };
+}
+
+function startFallbackPolling() {
+  if (fallbackTimer || !currentJob || finished) return;
+  let tries = 0;
+  fallbackTimer = setInterval(async () => {
+    if (++tries > 450 || finished) { clearInterval(fallbackTimer); return; }
+    try {
+      const r = await fetch(`/api/v1/jobs/${currentJob}`);
+      if (r.ok) render(await r.json());
+    } catch (e) { /* sessizce devam */ }
+  }, 2000);
+}
+
+// ------------------------------------------------------------ gönderim
+form.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  formErr.textContent = "";
+  const subnet = document.getElementById("subnet").value.trim();
+  const profile = document.querySelector('input[name="p"]:checked').value;
+  const payload = { subnet, profile };
+  if (profile === "custom") payload.ports = document.getElementById("ports").value.trim();
+
+  startBtn.disabled = true;
+  finished = false;
+  resetStages();
+  try {
+    const resp = await fetch("/api/v1/scan", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    const data = await resp.json();
+    if (!resp.ok) throw new Error(humanError(data));
+
+    currentJob = data.job_id;
+    startedAt = Date.now();
+    jobEl.textContent = `job_id: ${currentJob.slice(0, 12)}… (ws bağlı)`;
+    connectWS(data.ws_url);
+  } catch (err) {
+    formErr.textContent = err.message;
+    logsEl.innerHTML = `<span style="color:#EF4444">${esc(err.message)}</span>`;
+  } finally {
+    startBtn.disabled = false;
+  }
+});
+</script>
+<script>
+/* Kabuk (iframe) içindeyiz: tekrar eden marka/nav gizlenir, data-go
+   bağlantıları üst sekme değişimine çevirilir (postMessage köprüsü). */
+if (window.top !== window.self) {
+  const s = document.createElement("style");
+  s.textContent = ".brand, nav{display:none!important}.panel-head{justify-content:flex-end!important}";
+  document.head.appendChild(s);
+}
+document.addEventListener("click", (e) => {
+  const el = e.target.closest("[data-go]");
+  if (!el) return;
+  if (window.top !== window.self) {
+    e.preventDefault();
+    window.top.postMessage({ go: el.dataset.go }, "*");
+  }
+});
+</script>
+<script src="/static/token.js"></script>
+</body>
+</html>

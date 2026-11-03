@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  body { margin:0; background:#0B0F14; font-family:'Inter',sans-serif; color:#E6EDF3; }
+  .mono { font-family:'JetBrains Mono',monospace; }
+  a { color:#2DD4BF; text-decoration:none; }
+  button, .btn { font-family:inherit; }
+</style>
+</head>
+<body>
+<div class="panel-wrap" style="width:100%;max-width:1360px;margin:0 auto;box-sizing:border-box;padding:24px 28px;display:flex;flex-direction:column;gap:18px">
+
+  <div class="panel-head" style="display:flex;justify-content:space-between;align-items:center">
+    <div class="brand" style="display:flex;align-items:center;gap:10px">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2DD4BF" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M12 2v4M12 18v4M4.9 4.9l2.8 2.8M16.3 16.3l2.8 2.8M2 12h4M18 12h4M4.9 19.1l2.8-2.8M16.3 7.7l2.8-2.8"></path></svg>
+      <span style="font-size:17px;font-weight:700">NetMapper</span>
+    </div>
+    <nav style="display:flex;gap:4px">
+      <span style="padding:7px 14px;border-radius:8px;background:#121820;border:1px solid #2DD4BF;font-size:13px">Dashboard</span>
+      <a href="/static/panels/yeni_tarama.html"   data-go="yeni_tarama"   style="padding:7px 14px;border-radius:8px;font-size:13px;color:#8B98A5">Yeni Tarama</a>
+      <a href="/static/panels/ad_modulu.html"     data-go="ad_modulu"     style="padding:7px 14px;border-radius:8px;font-size:13px;color:#8B98A5">AD Keşif</a>
+      <a href="/static/panels/nac_modulu.html"    data-go="nac_modulu"    style="padding:7px 14px;border-radius:8px;font-size:13px;color:#8B98A5">NAC Delme</a>
+      <a href="/static/panels/host_envanteri.html" data-go="host_envanteri" style="padding:7px 14px;border-radius:8px;font-size:13px;color:#8B98A5">Envanter</a>
+      <span title="yakında" style="padding:7px 14px;border-radius:8px;font-size:13px;color:#5b6671">Raporlar</span>
+      <span title="yakında" style="padding:7px 14px;border-radius:8px;font-size:13px;color:#5b6671">Ayarlar</span>
+    </nav>
+    <a href="/static/panels/yeni_tarama.html" data-go="yeni_tarama" class="btn" style="background:#2DD4BF;color:#0B0F14;border:none;padding:9px 16px;border-radius:8px;font-weight:600;font-size:13px;cursor:pointer;display:inline-block">+ Yeni Tarama</a>
+  </div>
+
+  <!-- Özet kartlar (Kurulum adımları: Son Tarama / Canlı Host / Açık Port / Yüksek Riskli) -->
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px">
+    <div style="background:#121820;border:1px solid #1F2A35;border-radius:12px;padding:18px">
+      <div style="font-size:12px;color:#8B98A5">Son Tarama</div>
+      <div class="mono" id="ls-subnet" style="font-size:15px;font-weight:600;margin-top:6px">—</div>
+      <div id="ls-when" style="font-size:12px;color:#8B98A5;margin-top:4px">henüz tarama yok</div>
+    </div>
+    <div style="background:#121820;border:1px solid #1F2A35;border-radius:12px;padding:18px">
+      <div style="font-size:12px;color:#8B98A5">Canlı Host</div>
+      <div class="mono" id="cnt-hosts" style="font-size:28px;font-weight:700;margin-top:4px">0</div>
+    </div>
+    <div style="background:#121820;border:1px solid #1F2A35;border-radius:12px;padding:18px">
+      <div style="font-size:12px;color:#8B98A5">Açık Port</div>
+      <div class="mono" id="cnt-ports" style="font-size:28px;font-weight:700;margin-top:4px">0</div>
+    </div>
+    <div style="background:#121820;border:1px solid #F59E0B;border-radius:12px;padding:18px">
+      <div style="font-size:12px;color:#F59E0B">Yüksek Riskli Cihaz</div>
+      <div class="mono" id="cnt-high" style="font-size:28px;font-weight:700;margin-top:4px;color:#F59E0B">0</div>
+    </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1.3fr 1fr;gap:16px;flex:1">
+    <div style="background:#121820;border:1px solid #1F2A35;border-radius:12px;padding:20px;display:flex;flex-direction:column;gap:10px">
+      <div style="font-size:13px;font-weight:600;color:#8B98A5">AĞ HARİTASI <span id="map-scan" style="font-weight:400"></span></div>
+      <div id="map" style="min-height:280px"></div>
+      <div id="node-detail" style="display:none;background:#0B0F14;border:1px solid #1F2A35;border-radius:8px;padding:10px 12px;font-size:12px"></div>
+      <div style="display:flex;gap:16px;font-size:11px;color:#8B98A5">
+        <span><span style="color:#2DD4BF">●</span> Gateway</span>
+        <span><span style="color:#22C55E">●</span> Düşük risk</span>
+        <span><span style="color:#F59E0B">●</span> Orta risk</span>
+        <span><span style="color:#EF4444">●</span> Yüksek risk</span>
+      </div>
+    </div>
+
+    <div style="background:#121820;border:1px solid #1F2A35;border-radius:12px;padding:20px;display:flex;flex-direction:column;gap:12px">
+      <div style="font-size:13px;font-weight:600;color:#8B98A5">SON TARAMALAR</div>
+      <div id="scan-list" style="display:flex;flex-direction:column;gap:8px"></div>
+    </div>
+  </div>
+
+</div>
+<script>
+"use strict";
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g,
+  c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+
+const PROFILE_TR = { quick: "Hızlı Keşif", full: "Tam Tarama", custom: "Özel", ad: "AD Keşif" };
+const STATUS_BADGE = {
+  pending:     ["Sıraya alındı", "#8B98A5", "#1A2129"],
+  discovering: ["Keşif",         "#F59E0B", "#241B0A"],
+  scanning:    ["Tarama",        "#F59E0B", "#241B0A"],
+  normalizing: ["Kayıt",         "#F59E0B", "#241B0A"],
+  done:        ["Tamamlandı",    "#22C55E", "#0F2419"],
+  error:       ["Hata",          "#EF4444", "#2A1212"],
+  queued:      ["Sıraya alındı", "#8B98A5", "#1A2129"],   // eski satırlar
+  running:     ["Çalışıyor",     "#F59E0B", "#241B0A"],
+};
+const RISK_COLOR = { high: "#EF4444", medium: "#F59E0B", low: "#22C55E", info: "#22C55E" };
+
+function relTime(iso) {
+  if (!iso) return "";
+  const diff = (Date.now() - new Date(iso).getTime()) / 1000;
+  if (diff < 60) return "az önce";
+  if (diff < 3600) return Math.floor(diff / 60) + " dk önce";
+  if (diff < 86400) return Math.floor(diff / 3600) + " saat önce";
+  return new Date(iso).toLocaleDateString("tr-TR");
+}
+
+async function loadStats() {
+  try {
+    const s = await (await fetch("/api/v1/stats")).json();
+    document.getElementById("cnt-hosts").textContent = s.total_hosts;
+    document.getElementById("cnt-ports").textContent = s.open_ports;
+    document.getElementById("cnt-high").textContent = s.high_risk;
+    if (s.last_scan) {
+      document.getElementById("ls-subnet").textContent = s.last_scan.subnet;
+      const st = STATUS_BADGE[s.last_scan.status] || ["—", "#8B98A5", "#1A2129"];
+      document.getElementById("ls-when").innerHTML =
+        `${esc(PROFILE_TR[s.last_scan.profile] || s.last_scan.profile)} · ` +
+        `<span style="color:${st[1]}">${esc(st[0])}</span> · ${esc(relTime(s.last_scan.updated_at))}`;
+      if (s.last_scan.status === "done") loadMap(s.last_scan.scan_id, s.last_scan.subnet);
+      else {
+        document.getElementById("map-scan").textContent = "—";
+        document.getElementById("map").innerHTML =
+          '<div style="color:#8B98A5;font-size:13px;padding:40px 0;text-align:center">Son tarama henüz bitmedi</div>';
+      }
+    } else {
+      document.getElementById("map").innerHTML =
+        '<div style="color:#8B98A5;font-size:13px;padding:40px 0;text-align:center">Henüz tarama yok — “Yeni Tarama” ile başlayın</div>';
+    }
+  } catch (e) { console.error("stats:", e); }
+}
+
+async function loadScans() {
+  try {
+    const data = await (await fetch("/api/v1/scans?limit=8")).json();
+    const box = document.getElementById("scan-list");
+    if (!data.scans.length) {
+      box.innerHTML = '<div style="color:#8B98A5;font-size:12px">Kayıt yok</div>';
+      return;
+    }
+    box.innerHTML = data.scans.map(sc => {
+      const st = STATUS_BADGE[sc.status] || ["Bilinmiyor", "#8B98A5", "#1A2129"];
+      const pdf = sc.status === "done"
+        ? ` <a href="/api/v1/scans/${sc.scan_id}/report" target="_blank" title="PDF rapor">📄</a>` : "";
+      return `<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 12px 10px 10px;background:#0B0F14;border-radius:8px;border-left:3px solid ${st[1]}">
+        <div><div class="mono" style="font-size:13px">${esc(sc.subnet)}${pdf}</div>
+        <div style="font-size:11px;color:#8B98A5">${esc(PROFILE_TR[sc.profile] || sc.profile)} · ${esc(relTime(sc.finished_at || sc.created_at))}</div></div>
+        <span style="font-size:11px;color:${st[1]};background:${st[2]};padding:4px 8px;border-radius:6px">${esc(st[0])}</span>
+      </div>`;
+    }).join("");
+  } catch (e) { console.error("scans:", e); }
+}
+async function loadMap(scanId, subnet) {
+  try {
+    const data = await (await fetch(`/api/v1/scans/${scanId}/results`)).json();
+    const hosts = data.hosts || [];
+    document.getElementById("map-scan").textContent = hosts.length ? `· ${subnet}` : "";
+    renderMap(hosts);
+  } catch (e) { console.error("map:", e); }
+}
+
+function renderMap(hosts) {
+  const box = document.getElementById("map");
+  if (!hosts.length) {
+    box.innerHTML = '<div style="color:#8B98A5;font-size:13px;padding:40px 0;text-align:center">Host bulunamadı</div>';
+    return;
+  }
+  const cx = 300, cy = 140;
+  const num = (ip) => ip.split(".").map(Number).reduce((p, v) => p * 256 + v, 0);
+  const sorted = [...hosts].sort((a, b) => num(a.ip) - num(b.ip));
+  const gw = hosts.find(h => h.ip.endsWith(".1")) || sorted[0];
+  const others = hosts.filter(h => h !== gw).slice(0, 11);
+
+  let svg = `<svg width="100%" height="280" viewBox="0 0 600 280">`;
+  const nodes = others.map((h, i) => {
+    const ang = (2 * Math.PI * i) / Math.max(others.length, 1) - Math.PI / 2;
+    return { h, x: cx + 175 * Math.cos(ang), y: cy + 105 * Math.sin(ang) };
+  });
+  nodes.forEach(n => {
+    svg += `<line x1="${cx}" y1="${cy}" x2="${n.x.toFixed(0)}" y2="${n.y.toFixed(0)}" stroke="#1F2A35" stroke-width="2"/>`;
+  });
+  svg += `<circle data-gw="1" cx="${cx}" cy="${cy}" r="26" fill="#0B0F14" stroke="#2DD4BF" stroke-width="2" style="cursor:pointer"/>`;
+  svg += `<text x="${cx}" y="${cy + 4}" text-anchor="middle" fill="#2DD4BF" font-size="10" font-family="JetBrains Mono" style="pointer-events:none">.${esc(gw.ip.split(".").pop())}</text>`;
+  nodes.forEach((n, i) => {
+    const color = RISK_COLOR[n.h.risk_level] || "#8B98A5";
+    svg += `<circle data-i="${i}" cx="${n.x.toFixed(0)}" cy="${n.y.toFixed(0)}" r="18" fill="#0B0F14" stroke="${color}" stroke-width="2" style="cursor:pointer"/>`;
+    svg += `<text x="${n.x.toFixed(0)}" y="${(n.y + 4).toFixed(0)}" text-anchor="middle" fill="${color}" font-size="10" font-family="JetBrains Mono" style="pointer-events:none">.${esc(n.h.ip.split(".").pop())}</text>`;
+  });
+  svg += `</svg>`;
+  box.innerHTML = svg;
+
+  box.querySelectorAll("[data-i]").forEach(el =>
+    el.addEventListener("click", () => showDetail(nodes[+el.dataset.i].h)));
+  const gwEl = box.querySelector("[data-gw]");
+  if (gwEl) gwEl.addEventListener("click", () => showDetail(gw));
+  showDetail(gw);   // gateway seçili başlar
+}
+
+function showDetail(h) {
+  const el = document.getElementById("node-detail");
+  const ports = (h.services || []).map(s => s.port).join(", ") || "yok";
+  el.style.display = "block";
+  el.innerHTML =
+    `<b class="mono">${esc(h.ip)}</b>${h.hostname ? " · " + esc(h.hostname) : ""} ` +
+    `<span style="color:${RISK_COLOR[h.risk_level] || "#8B98A5"}">● ${esc(h.risk_level)} risk · ${esc(h.risk_score)}/100</span><br>` +
+    `<span style="color:#8B98A5">Açık portlar:</span> <span class="mono">${esc(ports)}</span>`;
+}
+
+loadStats();
+loadScans();
+</script>
+<script>
+/* Kabuk (iframe) içindeyiz: tekrar eden marka/nav gizlenir, data-go
+   bağlantıları üst sekme değişimine çevirilir (postMessage köprüsü). */
+if (window.top !== window.self) {
+  const s = document.createElement("style");
+  s.textContent = ".brand, nav{display:none!important}.panel-head{justify-content:flex-end!important}";
+  document.head.appendChild(s);
+}
+document.addEventListener("click", (e) => {
+  const el = e.target.closest("[data-go]");
+  if (!el) return;
+  if (window.top !== window.self) {
+    e.preventDefault();
+    window.top.postMessage({ go: el.dataset.go }, "*");
+  }
+});
+</script>
+
+
+<script src="/static/token.js"></script>
+</body>
+</html>

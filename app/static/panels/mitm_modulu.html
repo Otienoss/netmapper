@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MitM — ARP Poisoning</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0B0F14;--bar:#0E141B;--panel:#121820;--border:#1F2A35;
+  --accent:#2DD4BF;--text:#E6EDF3;--muted:#8B98A5;
+  --green:#22C55E;--amber:#F59E0B;--red:#EF4444;--purple:#A78BFA;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);font-family:'Inter',sans-serif;color:var(--text);font-size:14px}
+.mono{font-family:'JetBrains Mono',monospace}
+input,select{background:var(--bg);border:1px solid var(--border);color:var(--text);
+  border-radius:8px;padding:9px 12px;font-size:13px;font-family:inherit;
+  width:100%;transition:border-color .15s;outline:none}
+input:focus,select:focus{border-color:var(--accent)}
+input[type=range]{padding:4px 0;accent-color:var(--accent)}
+label{font-size:12px;color:var(--muted);display:block;margin-bottom:5px}
+.btn{appearance:none;border:none;border-radius:8px;padding:10px 18px;
+  font:600 13px/1 'Inter',sans-serif;cursor:pointer;transition:opacity .15s}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn:not(:disabled):hover{opacity:.85}
+.btn-primary{background:var(--accent);color:#0B0F14}
+.btn-danger {background:var(--red);color:#fff}
+.btn-ghost  {background:#1A2430;color:var(--text);border:1px solid var(--border)}
+.btn-sm     {padding:6px 12px;font-size:12px}
+.card{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:20px}
+.card-title{font-size:12px;font-weight:600;color:var(--muted);letter-spacing:.6px;margin-bottom:14px}
+.badge{display:inline-block;padding:3px 9px;border-radius:6px;font-size:11px;font-weight:500}
+.badge-green{color:var(--green);background:#0F2419}
+.badge-amber{color:var(--amber);background:#241B0A}
+.badge-red  {color:var(--red);  background:#2A1212}
+.badge-muted{color:var(--muted);background:#1A2129}
+.badge-purple{color:var(--purple);background:#1E1A2E}
+.logbox{background:var(--bg);border:1px solid var(--border);border-radius:8px;
+  padding:12px;font-size:11px;font-family:'JetBrains Mono',monospace;
+  line-height:1.8;color:var(--muted);min-height:140px;max-height:220px;overflow-y:auto}
+.log-ok   {color:var(--green)}
+.log-warn {color:var(--amber)}
+.log-err  {color:var(--red)}
+.log-info {color:var(--accent)}
+.log-cred {color:var(--purple);font-weight:600}
+.progress-bar{height:6px;background:#161D25;border-radius:4px;overflow:hidden;margin:4px 0}
+.progress-fill{height:100%;border-radius:4px;transition:width .5s}
+.stat-card{background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:14px;text-align:center}
+.warning-strip{background:#241B0A;border:1px solid #3D2E0F;border-radius:8px;
+  padding:10px 14px;font-size:12px;color:var(--amber);display:flex;align-items:center;gap:8px}
+table{width:100%;border-collapse:collapse}
+th{text-align:left;font-size:11px;color:var(--muted);font-weight:500;padding:8px 10px;border-bottom:1px solid var(--border)}
+td{padding:9px 10px;font-size:12px;border-bottom:1px solid #161D25;vertical-align:middle}
+.cred-row td{background:#1A0F1E!important;color:var(--purple)}
+.dns-row  td{background:#0F1A1E!important;color:var(--accent)}
+</style>
+</head>
+<body>
+<div class="panel-wrap" style="width:100%;max-width:1400px;margin:0 auto;padding:24px 28px;display:flex;flex-direction:column;gap:16px">
+
+  <!-- başlık -->
+  <div class="panel-head" style="display:flex;justify-content:space-between;align-items:center">
+    <div class="brand" style="display:flex;align-items:center;gap:10px">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2DD4BF" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M12 2v4M12 18v4M4.9 4.9l2.8 2.8M16.3 16.3l2.8 2.8M2 12h4M18 12h4M4.9 19.1l2.8-2.8M16.3 7.7l2.8-2.8"></path></svg>
+      <span style="font-size:17px;font-weight:700">NetMapper</span>
+    </div>
+    <nav style="display:flex;gap:4px">
+      <a href="/static/panels/dashboard.html"      data-go="dashboard"      style="padding:7px 14px;border-radius:8px;font-size:13px;color:#8B98A5">Dashboard</a>
+      <a href="/static/panels/yeni_tarama.html"    data-go="yeni_tarama"    style="padding:7px 14px;border-radius:8px;font-size:13px;color:#8B98A5">Yeni Tarama</a>
+      <a href="/static/panels/ad_modulu.html"      data-go="ad_modulu"      style="padding:7px 14px;border-radius:8px;font-size:13px;color:#8B98A5">AD Keşif</a>
+      <a href="/static/panels/nac_modulu.html"     data-go="nac_modulu"     style="padding:7px 14px;border-radius:8px;font-size:13px;color:#8B98A5">NAC Delme</a>
+      <span style="padding:7px 14px;border-radius:8px;background:var(--panel);border:1px solid var(--accent);font-size:13px">MitM</span>
+      <a href="/static/panels/host_envanteri.html" data-go="host_envanteri" style="padding:7px 14px;border-radius:8px;font-size:13px;color:#8B98A5">Envanter</a>
+    </nav>
+    <div style="width:120px"></div>
+  </div>
+
+  <!-- uyarı -->
+  <div class="warning-strip">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+    ARP Poisoning yalnızca <strong style="margin:0 4px">kendi yönetiminizde veya yazılı izin aldığınız ağlarda</strong> kullanılabilir.
+    Oturum bitince ARP tabloları <strong style="margin-left:4px">otomatik restore edilir</strong> — IP forwarding kapatılır.
+  </div>
+
+  <!-- üst satır: sol=parametreler, sağ=canlı izleme -->
+  <div style="display:grid;grid-template-columns:1fr 1.1fr;gap:16px">
+
+    <!-- SOL: Parametreler -->
+    <div style="display:flex;flex-direction:column;gap:14px">
+      <div class="card">
+        <div class="card-title">OTURUM PARAMETRELERİ</div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+          <div>
+            <label>Network Interface</label>
+            <input id="iface" type="text" value="vboxnet0" placeholder="eth0, vboxnet0…">
+          </div>
+          <div>
+            <label>Kurban IP</label>
+            <input id="victim" type="text" placeholder="192.168.56.10">
+          </div>
+          <div>
+            <label>Gateway IP</label>
+            <input id="gateway" type="text" placeholder="192.168.56.1">
+          </div>
+          <div>
+            <label>Süre: <span id="dur-label" class="mono" style="color:var(--accent)">120s</span></label>
+            <input type="range" id="dur-range" min="10" max="600" value="120" step="10"
+              oninput="document.getElementById('dur-label').textContent=this.value+'s'">
+            <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted)"><span>10s</span><span>5dk</span><span>10dk</span></div>
+          </div>
+        </div>
+
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;padding:10px;background:var(--bg);border-radius:8px;border:1px solid var(--border)">
+          <input type="checkbox" id="chk-capture" checked style="width:14px;height:14px;accent-color:var(--accent)">
+          <div>
+            <div style="font-size:13px;font-weight:500">Paket Yakalama</div>
+            <div style="font-size:11px;color:var(--muted)">HTTP credential, DNS ve ilginç portlar analiz edilir</div>
+          </div>
+        </div>
+
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn btn-primary" id="btn-start" onclick="startMitm()">🎯 MitM Başlat</button>
+          <button class="btn btn-danger  btn-sm" id="btn-stop"  onclick="stopMitm()" disabled>⏹ Durdur</button>
+          <button class="btn btn-ghost   btn-sm"               onclick="resetUI()">✕ Sıfırla</button>
+        </div>
+      </div>
+
+      <!-- İstatistik kartlar -->
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px">
+        <div class="stat-card">
+          <div style="font-size:11px;color:var(--muted)">ARP Paketi</div>
+          <div class="mono" id="cnt-arp"  style="font-size:22px;font-weight:700;color:var(--accent)">0</div>
+        </div>
+        <div class="stat-card">
+          <div style="font-size:11px;color:var(--muted)">Yakalanan</div>
+          <div class="mono" id="cnt-cap"  style="font-size:22px;font-weight:700">0</div>
+        </div>
+        <div class="stat-card">
+          <div style="font-size:11px;color:var(--muted)">İlginç</div>
+          <div class="mono" id="cnt-int"  style="font-size:22px;font-weight:700;color:var(--amber)">0</div>
+        </div>
+        <div class="stat-card">
+          <div style="font-size:11px;color:var(--muted)">Credential</div>
+          <div class="mono" id="cnt-cred" style="font-size:22px;font-weight:700;color:var(--purple)">0</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SAĞ: Canlı izleme -->
+    <div style="display:flex;flex-direction:column;gap:14px">
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+          <div class="card-title" style="margin:0">CANLI İZLEME · <span style="color:var(--accent)">WebSocket</span></div>
+          <span id="job-id-label" class="mono" style="font-size:11px;color:var(--muted)"></span>
+        </div>
+
+        <!-- Aşama çubukları -->
+        <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:14px">
+          <div>
+            <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px">
+              <span>1. MAC çözümlemesi</span><span id="st-mac" class="badge badge-muted">Bekliyor</span>
+            </div>
+            <div class="progress-bar"><div class="progress-fill" id="pb-mac" style="width:0%;background:var(--muted)"></div></div>
+          </div>
+          <div>
+            <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px">
+              <span>2. ARP poisoning aktif</span><span id="st-poison" class="badge badge-muted">Bekliyor</span>
+            </div>
+            <div class="progress-bar"><div class="progress-fill" id="pb-poison" style="width:0%;background:var(--muted)"></div></div>
+          </div>
+          <div>
+            <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px">
+              <span id="hold-lbl">3. Trafik yakalama</span><span id="st-capture" class="badge badge-muted">Bekliyor</span>
+            </div>
+            <div class="progress-bar"><div class="progress-fill" id="pb-capture" style="width:0%;background:var(--amber)"></div></div>
+          </div>
+          <div>
+            <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px">
+              <span>4. ARP tabloları restore</span><span id="st-restore" class="badge badge-muted">Bekliyor</span>
+            </div>
+            <div class="progress-bar"><div class="progress-fill" id="pb-restore" style="width:0%;background:var(--muted)"></div></div>
+          </div>
+        </div>
+
+        <!-- Canlı log -->
+        <div class="logbox" id="logbox">[—] Oturum başlamadı...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ALT: Yakalanan paketler tablosu -->
+  <div class="card" style="padding:0;overflow:hidden">
+    <div style="padding:16px 20px 12px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
+      <span class="card-title" style="margin:0">YAKALANAN ÖNEMLİ PAKETLER</span>
+      <div style="display:flex;gap:8px;align-items:center">
+        <span class="badge badge-purple">● Credential</span>
+        <span class="badge" style="color:var(--accent);background:#0F1A1E">● DNS</span>
+        <span class="badge badge-amber">● HTTP</span>
+        <button class="btn btn-ghost btn-sm" onclick="clearPackets()">Temizle</button>
+      </div>
+    </div>
+    <div style="overflow-x:auto;max-height:280px;overflow-y:auto">
+      <table>
+        <thead><tr><th>Zaman</th><th>Kaynak</th><th>Hedef</th><th>Port</th><th>Tür</th><th>Özet</th></tr></thead>
+        <tbody id="packet-tbody">
+          <tr><td colspan="6" style="text-align:center;color:var(--muted);padding:28px">MitM oturumu başlatıldığında paketler burada görünecek</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Sonuç özeti (oturum bitince görünür) -->
+  <div id="result-section" style="display:none">
+    <div class="card">
+      <div class="card-title">OTURUM SONUCU</div>
+      <div id="result-content" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px"></div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+"use strict";
+const esc = s => String(s??'').replace(/[&<>"']/g, c =>
+  ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+let currentJobId = null;
+let ws           = null;
+let holdTimer    = null;
+let elapsed      = 0;
+let capturedRows = [];
+
+/* ---------- log ---------- */
+function addLog(msg, cls='') {
+  const box = document.getElementById('logbox');
+  const d   = document.createElement('div');
+  if (cls) d.className = cls;
+  d.textContent = msg;
+  box.appendChild(d);
+  box.scrollTop = box.scrollHeight;
+}
+function clearLog() {
+  document.getElementById('logbox').innerHTML = '';
+}
+
+/* ---------- aşama ---------- */
+function setStage(stId, pbId, label, badgeClass, pct, color) {
+  const st = document.getElementById(stId);
+  st.textContent = label;
+  st.className   = 'badge ' + badgeClass;
+  const pb = document.getElementById(pbId);
+  pb.style.width      = pct + '%';
+  pb.style.background = color;
+}
+function resetStages() {
+  [['st-mac','pb-mac'],['st-poison','pb-poison'],['st-capture','pb-capture'],['st-restore','pb-restore']]
+    .forEach(([s,p]) => setStage(s,p,'Bekliyor','badge-muted',0,'var(--muted)'));
+}
+
+/* ---------- sayaç ---------- */
+function setStat(id, val) { document.getElementById(id).textContent = val; }
+
+/* ---------- MitM başlat ---------- */
+async function startMitm() {
+  const iface    = document.getElementById('iface').value.trim();
+  const victim   = document.getElementById('victim').value.trim();
+  const gateway  = document.getElementById('gateway').value.trim();
+  const duration = parseInt(document.getElementById('dur-range').value, 10);
+  const capture  = document.getElementById('chk-capture').checked;
+
+  if (!iface || !victim || !gateway) {
+    alert('Interface, Kurban IP ve Gateway IP zorunludur.');
+    return;
+  }
+  if (victim === gateway) {
+    alert('Kurban IP ve Gateway IP aynı olamaz.');
+    return;
+  }
+
+  document.getElementById('btn-start').disabled = true;
+  document.getElementById('btn-stop').disabled  = false;
+  clearLog();
+  resetStages();
+  setStat('cnt-arp',0); setStat('cnt-cap',0); setStat('cnt-int',0); setStat('cnt-cred',0);
+  capturedRows = [];
+  document.getElementById('packet-tbody').innerHTML =
+    '<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:20px">Paketler bekleniyor…</td></tr>';
+  document.getElementById('result-section').style.display = 'none';
+  document.getElementById('hold-lbl').textContent = `3. Trafik yakalama (${duration}s)`;
+
+  addLog('Oturum başlatma isteği gönderiliyor…','log-info');
+
+  try {
+    const res = await fetch('/api/v1/mitm/start', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({interface:iface, victim_ip:victim, gateway_ip:gateway,
+                            duration_sec:duration, capture}),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(()=>({detail:'Bilinmiyor'}));
+      throw new Error(err.detail || res.statusText);
+    }
+    const data = await res.json();
+    currentJobId = data.job_id;
+    document.getElementById('job-id-label').textContent = 'job: ' + currentJobId.slice(0,8);
+    addLog('Job başlatıldı → ' + currentJobId, 'log-info');
+    connectWs(data.ws_url, duration);
+  } catch(e) {
+    addLog('⚠ Hata: ' + e.message, 'log-err');
+    document.getElementById('btn-start').disabled = false;
+    document.getElementById('btn-stop').disabled  = true;
+  }
+}
+
+/* ---------- WebSocket ---------- */
+function connectWs(wsUrl, duration) {
+  const proto = location.protocol === 'https:' ? 'wss' : 'ws';
+  if (ws) ws.close();
+  ws = new WebSocket(`${proto}://${location.host}${wsUrl}`);
+  ws.onmessage = ev => {
+    try { handleUpdate(JSON.parse(ev.data), duration); } catch {}
+  };
+  ws.onerror = () => addLog('WebSocket bağlantı hatası','log-err');
+  ws.onclose = () => addLog('WebSocket kapandı.','');
+}
+
+function handleUpdate(payload, duration) {
+  const logs   = payload.logs || [];
+  const status = payload.status;
+
+  if (logs.length) {
+    const last = logs[logs.length - 1];
+    const cls  = last.includes('⚠') || last.includes('hata') ? 'log-err'
+               : last.includes('restore') || last.includes('geri') ? 'log-warn'
+               : last.includes('✓') ? 'log-ok'
+               : last.includes('[!]') || last.includes('Hassas') ? 'log-cred'
+               : 'log-info';
+    addLog(last, cls);
+
+    // Aşama tespiti
+    if (last.includes('MAC çözümleniyor'))
+      setStage('st-mac','pb-mac','Çözümleniyor…','badge-amber',50,'var(--amber)');
+    if (last.includes('IP forwarding etkin'))
+      setStage('st-mac','pb-mac','Tamamlandı','badge-green',100,'var(--green)');
+    if (last.includes('poisoning başladı')) {
+      setStage('st-poison','pb-poison','Aktif','badge-amber',100,'var(--amber)');
+      setStage('st-capture','pb-capture','Yakalanıyor…','badge-amber',10,'var(--amber)');
+      // geri sayım
+      elapsed = 0;
+      if (holdTimer) clearInterval(holdTimer);
+      holdTimer = setInterval(() => {
+        elapsed++;
+        const pct = Math.min((elapsed / duration) * 100, 100);
+        document.getElementById('pb-capture').style.width = pct + '%';
+        if (elapsed >= duration) clearInterval(holdTimer);
+      }, 1000);
+    }
+    if (last.includes('geri yükleniyor')) {
+      if (holdTimer) clearInterval(holdTimer);
+      setStage('st-capture','pb-capture','Bitti','badge-green',100,'var(--green)');
+      setStage('st-restore','pb-restore','Restore…','badge-amber',50,'var(--amber)');
+    }
+    if (last.includes('restore edildi') || last.includes('geri yüklendi'))
+      setStage('st-restore','pb-restore','Tamamlandı','badge-green',100,'var(--green)');
+  }
+
+  // ARP paketi sayacı (results'dan okuruz)
+  const results = payload.results;
+  if (results && results[0]) {
+    const r = results[0];
+    if (r.packets_sent)       setStat('cnt-arp',  r.packets_sent);
+    if (r.total_captured)     setStat('cnt-cap',  r.total_captured);
+    if (r.interesting)        setStat('cnt-int',  r.interesting);
+    if (r.credentials_hints)  setStat('cnt-cred', r.credentials_hints.length);
+  }
+
+  if (status === 'done') {
+    if (holdTimer) clearInterval(holdTimer);
+    setStage('st-restore','pb-restore','Tamamlandı','badge-green',100,'var(--green)');
+    document.getElementById('btn-start').disabled = false;
+    document.getElementById('btn-stop').disabled  = true;
+    if (results && results[0]) showResult(results[0]);
+    fetchCaptures();
+  }
+  if (status === 'error') {
+    addLog('⚠ İş hatası: ' + (payload.error||'bilinmiyor'),'log-err');
+    document.getElementById('btn-start').disabled = false;
+    document.getElementById('btn-stop').disabled  = true;
+  }
+}
+
+/* ---------- durdur ---------- */
+async function stopMitm() {
+  if (!currentJobId) return;
+  try {
+    await fetch(`/api/v1/mitm/stop/${currentJobId}`, {method:'POST'});
+    addLog('Durdurma sinyali gönderildi — ARP restore bekleniyor…','log-warn');
+    document.getElementById('btn-stop').disabled = true;
+  } catch(e) {
+    addLog('⚠ Durdurma hatası: ' + e.message,'log-err');
+  }
+}
+
+/* ---------- captures fetch ---------- */
+async function fetchCaptures() {
+  if (!currentJobId) return;
+  try {
+    const res = await fetch(`/api/v1/mitm/captures/${currentJobId}`);
+    const data = await res.json();
+    const r = (data.results||[])[0];
+    if (!r) return;
+    renderPacketTable(r);
+    setStat('cnt-arp',  r.packets_sent     || 0);
+    setStat('cnt-cap',  r.total_captured   || 0);
+    setStat('cnt-int',  r.interesting      || 0);
+    setStat('cnt-cred',(r.credentials_hints||[]).length);
+  } catch {}
+}
+
+function renderPacketTable(r) {
+  const tbody = document.getElementById('packet-tbody');
+  const rows  = [];
+
+  (r.credentials_hints||[]).forEach(s => rows.push({cat:'credential', txt:s}));
+  (r.dns_queries||[]).forEach(s       => rows.push({cat:'dns',        txt:s}));
+  (r.http_requests||[]).forEach(s     => rows.push({cat:'http',       txt:s}));
+
+  if (!rows.length) {
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:20px">İlginç paket bulunamadı</td></tr>';
+    return;
+  }
+
+  const catBadge = {
+    credential: '<span class="badge badge-purple">Credential</span>',
+    dns:        '<span class="badge" style="color:var(--accent);background:#0F1A1E">DNS</span>',
+    http:       '<span class="badge badge-amber">HTTP</span>',
+  };
+
+  tbody.innerHTML = rows.map(row => {
+    const rowClass = row.cat === 'credential' ? 'cred-row' : row.cat === 'dns' ? 'dns-row' : '';
+    const cols = row.txt.split('  ');
+    return `<tr class="${rowClass}">
+      <td class="mono" style="font-size:11px">—</td>
+      <td class="mono" style="font-size:11px">${esc(cols[0]||'')}</td>
+      <td class="mono" style="font-size:11px">${esc(cols[1]||'')}</td>
+      <td class="mono" style="font-size:11px">${esc(cols[2]||'')}</td>
+      <td>${catBadge[row.cat]||''}</td>
+      <td style="max-width:400px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"
+          title="${esc(row.txt)}">${esc(row.txt.slice(0,120))}</td>
+    </tr>`;
+  }).join('');
+}
+
+/* ---------- sonuç özeti ---------- */
+function showResult(r) {
+  document.getElementById('result-section').style.display = 'block';
+  const el = document.getElementById('result-content');
+  const kv = (label, val, color='var(--text)') =>
+    `<div class="stat-card" style="text-align:left">
+       <div style="font-size:11px;color:var(--muted);margin-bottom:6px">${esc(label)}</div>
+       <div class="mono" style="font-size:14px;font-weight:600;color:${color};word-break:break-all">${esc(String(val))}</div>
+     </div>`;
+
+  el.innerHTML =
+    kv('Kurban MAC',    r.victim_mac   || '—') +
+    kv('Gateway MAC',   r.gateway_mac  || '—') +
+    kv('ARP Paketi',    r.packets_sent || 0, 'var(--accent)') +
+    kv('Yakalanan',     r.total_captured || 0) +
+    kv('İlginç Paket',  r.interesting    || 0, 'var(--amber)') +
+    kv('Credential',   (r.credentials_hints||[]).length, 'var(--purple)') +
+    kv('DNS Sorgusu',   (r.dns_queries||[]).length, 'var(--accent)');
+}
+
+/* ---------- sıfırla ---------- */
+function resetUI() {
+  if (ws) ws.close();
+  if (holdTimer) clearInterval(holdTimer);
+  currentJobId = null;
+  clearLog();
+  resetStages();
+  setStat('cnt-arp',0); setStat('cnt-cap',0); setStat('cnt-int',0); setStat('cnt-cred',0);
+  document.getElementById('btn-start').disabled = false;
+  document.getElementById('btn-stop').disabled  = true;
+  document.getElementById('job-id-label').textContent = '';
+  document.getElementById('packet-tbody').innerHTML =
+    '<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:28px">MitM oturumu başlatıldığında paketler burada görünecek</td></tr>';
+  document.getElementById('result-section').style.display = 'none';
+  addLog('[—] Oturum sıfırlandı.','');
+}
+
+function clearPackets() {
+  document.getElementById('packet-tbody').innerHTML =
+    '<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:20px">Temizlendi</td></tr>';
+}
+</script>
+
+<!-- iframe / standalone uyumu -->
+<script>
+if (window.top !== window.self) {
+  const s = document.createElement('style');
+  s.textContent = '.brand,nav{display:none!important}.panel-head{justify-content:flex-end!important}';
+  document.head.appendChild(s);
+}
+document.addEventListener('click', e => {
+  const el = e.target.closest('[data-go]');
+  if (!el) return;
+  if (window.top !== window.self) {
+    e.preventDefault();
+    window.top.postMessage({ go: el.dataset.go }, '*');
+  }
+});
+</script>
+<script src="/static/token.js"></script>
+</body>
+</html>

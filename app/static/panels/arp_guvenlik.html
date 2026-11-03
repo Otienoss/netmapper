@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ARP Güvenlik</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing:border-box; }
+  body { margin:0; background:#0B0F14; color:#E6EDF3; font:14px/1.5 Inter,sans-serif; }
+  .wrap { max-width:1450px; margin:0 auto; padding:24px; }
+  .head { display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; gap:12px; }
+  h1 { font-size:21px; margin:0; } h2 { font-size:15px; margin:0 0 12px; }
+  .safe { color:#2DD4BF; font-size:11px; border:1px solid #2DD4BF; border-radius:99px; padding:5px 10px; }
+  .grid { display:grid; grid-template-columns:1.15fr .85fr; gap:16px; }
+  .card { background:#121820; border:1px solid #1F2A35; border-radius:12px; padding:18px; min-width:0; }
+  .wide { grid-column:1/-1; }
+  .note { color:#8B98A5; font-size:12px; margin-bottom:14px; }
+  .fields { display:grid; grid-template-columns:repeat(2,1fr); gap:10px; }
+  label { display:block; color:#8B98A5; font-size:11px; margin-bottom:5px; }
+  input,textarea { width:100%; background:#0B0F14; border:1px solid #1F2A35; color:#E6EDF3; border-radius:7px; padding:9px 10px; font:12px 'JetBrains Mono',monospace; }
+  input:focus,textarea:focus { outline:1px solid #2DD4BF; }
+  textarea { min-height:190px; resize:vertical; }
+  .btn { border:0; border-radius:8px; padding:10px 15px; background:#2DD4BF; color:#0B0F14; font-weight:600; cursor:pointer; margin:12px 8px 0 0; }
+  .btn.secondary { background:#1F2A35; color:#E6EDF3; }
+  .btn:disabled { opacity:.45; cursor:not-allowed; }
+  .logs { background:#0B0F14; border-radius:8px; padding:10px; margin-top:12px; min-height:100px; max-height:190px; overflow:auto; color:#8B98A5; font:11px/1.7 'JetBrains Mono',monospace; }
+  .mono { font-family:'JetBrains Mono',monospace; }
+  .status { display:inline-block; border-radius:99px; padding:3px 9px; font-size:11px; font-weight:600; background:#1F2A35; }
+  .clean,.pass { color:#22C55E; } .alerts,.at_risk { color:#EF4444; }
+  .inconclusive,.review { color:#F59E0B; }
+  .summary { display:flex; align-items:center; gap:10px; margin:12px 0; color:#8B98A5; font-size:12px; flex-wrap:wrap; }
+  .alert,.finding { border-top:1px solid #1F2A35; padding:12px 0; }
+  .kind { font-weight:600; margin-bottom:4px; } .critical { color:#EF4444; }
+  .high { color:#F97316; } .medium { color:#F59E0B; }
+  .evidence { color:#8B98A5; font-size:11px; white-space:pre-wrap; word-break:break-word; margin:5px 0; }
+  .fix { color:#A7F3D0; font-size:12px; }
+  .err { color:#EF4444; font-size:12px; margin-top:10px; white-space:pre-wrap; }
+  .check { display:flex; gap:8px; align-items:center; margin-top:10px; }
+  .check input { width:auto; }
+  table { width:100%; border-collapse:collapse; margin-top:10px; font-size:12px; }
+  th,td { text-align:left; vertical-align:top; border-bottom:1px solid #1F2A35; padding:8px; }
+  th { color:#8B98A5; font-weight:500; }
+  @media(max-width:950px) { .grid { grid-template-columns:1fr; } .wide { grid-column:auto; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="head">
+    <div><h1>🛰 ARP Güvenlik</h1><div class="note">Kök neden ve anomali tespiti · kanıt + remediation</div></div>
+    <span class="safe">PASİF · Paket gönderimi yok</span>
+  </div>
+  <div class="grid">
+    <section class="card">
+      <h2>1. Canlı Pasif ARP Monitörü</h2>
+      <div class="note">Yalnızca ARP yayınlarını dinler; ARP tablosu veya IP forwarding değiştirmez.</div>
+      <div class="fields">
+        <div><label>Interface</label><input id="interface" value="eth0"></div>
+        <div><label>Süre (saniye)</label><input id="duration" type="number" value="60" min="5" max="600"></div>
+        <div><label>Gateway IP (opsiyonel)</label><input id="gateway_ip" placeholder="192.168.1.1"></div>
+        <div><label>Gateway MAC (opsiyonel)</label><input id="gateway_mac" placeholder="00:11:22:33:44:55"></div>
+        <div><label>Paket limiti</label><input id="max_packets" type="number" value="5000" min="100" max="50000"></div>
+      </div>
+      <button id="start-btn" class="btn">Pasif İzlemeyi Başlat</button>
+      <button id="stop-btn" class="btn secondary" disabled>Durdur</button>
+      <span id="job-id" class="mono" style="font-size:11px;color:#8B98A5"></span>
+      <div id="logs" class="logs">[—] Monitör başlatılmadı…</div>
+      <div id="monitor-result"></div>
+    </section>
+
+    <section class="card">
+      <h2>2. Offline PCAP Analizi</h2>
+      <div class="note">Yetkili PCAP/PCAPNG kaydı · en fazla 25 MiB · geçici dosya analizden sonra silinir.</div>
+      <input id="pcap-file" type="file" accept=".pcap,.pcapng,application/octet-stream">
+      <button id="pcap-btn" class="btn">PCAP'i Analiz Et</button>
+      <div id="pcap-result"></div>
+    </section>
+
+    <section class="card wide">
+      <h2>3. Switch Konfigürasyon Denetimi</h2>
+      <div class="note">DHCP snooping · DAI · IP Source Guard · Port Security · 802.1X</div>
+      <textarea id="config-text" placeholder="Switch konfigürasyonunu buraya yapıştırın…"></textarea>
+      <label class="check"><input id="config-complete" type="checkbox"> Bu, tam konfigürasyon (eksik kontroller FAIL sayılsın)</label>
+      <button id="config-btn" class="btn">Konfigürasyonu Denetle</button>
+      <div id="config-result"></div>
+    </section>
+  </div>
+</div>
+<script src="/static/token.js"></script>
+<script src="/static/arp_guvenlik.js"></script>
+</body>
+</html>

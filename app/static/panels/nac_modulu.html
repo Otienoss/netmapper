@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NAC Delme</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#0B0F14; --bar:#0E141B; --panel:#121820; --border:#1F2A35;
+  --accent:#2DD4BF; --text:#E6EDF3; --muted:#8B98A5;
+  --green:#22C55E; --amber:#F59E0B; --red:#EF4444;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);font-family:'Inter',sans-serif;color:var(--text);font-size:14px}
+.mono{font-family:'JetBrains Mono',monospace}
+
+/* form elemanları */
+input,select{
+  background:var(--bg);border:1px solid var(--border);color:var(--text);
+  border-radius:8px;padding:9px 12px;font-size:13px;font-family:inherit;
+  width:100%;transition:border-color .15s;outline:none;
+}
+input:focus,select:focus{border-color:var(--accent)}
+input[type=range]{padding:4px 0;accent-color:var(--accent)}
+label{font-size:12px;color:var(--muted);display:block;margin-bottom:5px}
+
+/* butonlar */
+.btn{
+  appearance:none;border:none;border-radius:8px;padding:10px 18px;
+  font:600 13px/1 'Inter',sans-serif;cursor:pointer;transition:opacity .15s;
+}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn:not(:disabled):hover{opacity:.88}
+.btn-primary{background:var(--accent);color:#0B0F14}
+.btn-danger {background:var(--red);color:#fff}
+.btn-ghost  {background:#1A2430;color:var(--text);border:1px solid var(--border)}
+.btn-sm     {padding:6px 12px;font-size:12px}
+
+/* kart */
+.card{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:20px}
+.card-title{font-size:12px;font-weight:600;color:var(--muted);letter-spacing:.6px;margin-bottom:14px}
+
+/* tablo */
+table{width:100%;border-collapse:collapse}
+th{text-align:left;font-size:11px;color:var(--muted);font-weight:500;
+   padding:8px 10px;border-bottom:1px solid var(--border)}
+td{padding:10px;font-size:13px;border-bottom:1px solid #161D25;vertical-align:middle}
+tr.selectable{cursor:pointer}
+tr.selectable:hover td{background:#0F141A}
+tr.selected td{background:#0d1f1e!important}
+
+/* badge */
+.badge{display:inline-block;padding:3px 9px;border-radius:6px;font-size:11px;font-weight:500}
+.badge-green {color:var(--green);background:#0F2419}
+.badge-amber {color:var(--amber);background:#241B0A}
+.badge-red   {color:var(--red);  background:#2A1212}
+.badge-muted {color:var(--muted);background:#1A2129}
+
+/* log kutusu */
+.logbox{
+  background:var(--bg);border:1px solid var(--border);border-radius:8px;
+  padding:12px;font-size:11px;font-family:'JetBrains Mono',monospace;
+  line-height:1.7;color:var(--muted);min-height:120px;max-height:200px;
+  overflow-y:auto;
+}
+.log-ok   {color:var(--green)}
+.log-warn {color:var(--amber)}
+.log-err  {color:var(--red)}
+.log-info {color:var(--accent)}
+
+/* ilerleme çubuğu */
+.progress-bar{height:6px;background:#161D25;border-radius:4px;overflow:hidden;margin:4px 0}
+.progress-fill{height:100%;border-radius:4px;transition:width .4s}
+
+/* seçili cihaz göstergesi */
+.selected-device{
+  background:var(--bg);border:1px solid var(--accent);border-radius:8px;
+  padding:10px 14px;display:flex;align-items:center;gap:12px;
+}
+
+/* uyarı şeridi */
+.warning-strip{
+  background:#241B0A;border:1px solid #3D2E0F;border-radius:8px;
+  padding:10px 14px;font-size:12px;color:var(--amber);
+  display:flex;align-items:center;gap:8px;
+}
+</style>
+</head>
+<body>
+<div class="panel-wrap" style="width:100%;max-width:1360px;margin:0 auto;padding:24px 28px;display:flex;flex-direction:column;gap:18px">
+
+  <!-- başlık -->
+  <div class="panel-head" style="display:flex;justify-content:space-between;align-items:center">
+    <div class="brand" style="display:flex;align-items:center;gap:10px">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2DD4BF" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M12 2v4M12 18v4M4.9 4.9l2.8 2.8M16.3 16.3l2.8 2.8M2 12h4M18 12h4M4.9 19.1l2.8-2.8M16.3 7.7l2.8-2.8"></path></svg>
+      <span style="font-size:17px;font-weight:700">NetMapper</span>
+    </div>
+    <nav style="display:flex;gap:4px">
+      <a href="/static/panels/dashboard.html"      data-go="dashboard"      style="padding:7px 14px;border-radius:8px;font-size:13px;color:#8B98A5">Dashboard</a>
+      <a href="/static/panels/yeni_tarama.html"    data-go="yeni_tarama"    style="padding:7px 14px;border-radius:8px;font-size:13px;color:#8B98A5">Yeni Tarama</a>
+      <a href="/static/panels/ad_modulu.html"      data-go="ad_modulu"      style="padding:7px 14px;border-radius:8px;font-size:13px;color:#8B98A5">AD Keşif</a>
+      <span style="padding:7px 14px;border-radius:8px;background:var(--panel);border:1px solid var(--accent);font-size:13px">NAC Delme</span>
+      <a href="/static/panels/host_envanteri.html" data-go="host_envanteri" style="padding:7px 14px;border-radius:8px;font-size:13px;color:#8B98A5">Envanter</a>
+    </nav>
+    <div style="width:120px"></div>
+  </div>
+
+  <!-- uyarı şeridi -->
+  <div class="warning-strip">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+    Bu modül yalnızca <strong style="margin:0 4px">kendi yönetiminizde veya yazılı izin aldığınız ağlarda</strong> kullanılabilir.
+    MAC spoofing kurumsal ağlarda yetkisiz kullanımda yasal sonuçlar doğurabilir.
+    Hold süresi bitince MAC <strong style="margin-left:4px">otomatik geri yüklenir.</strong>
+  </div>
+
+  <!-- 2 sütun: sol=tarama, sağ=bypass -->
+  <div style="display:grid;grid-template-columns:1.2fr 1fr;gap:16px;align-items:start">
+
+    <!-- SOL: MAC Keşif -->
+    <div style="display:flex;flex-direction:column;gap:14px">
+      <div class="card">
+        <div class="card-title">1 · MAC / VENDOR KEŞFİ</div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+          <div>
+            <label>Network Interface</label>
+            <input id="iface" type="text" value="vboxnet0" placeholder="eth0, enp3s0, vboxnet0…">
+          </div>
+          <div>
+            <label>Hedef Subnet</label>
+            <input id="subnet" type="text" value="192.168.56.0/24" placeholder="192.168.1.0/24">
+          </div>
+        </div>
+
+        <div style="display:flex;gap:8px;align-items:center">
+          <button class="btn btn-primary" id="btn-scan" onclick="startScan()">
+            <span id="scan-label">🔍 MAC Tara</span>
+          </button>
+          <button class="btn btn-ghost btn-sm" onclick="clearTable()" title="Tabloyu temizle">✕ Temizle</button>
+          <span id="scan-status" style="font-size:12px;color:var(--muted);margin-left:4px"></span>
+        </div>
+      </div>
+
+      <!-- Sonuç tablosu -->
+      <div class="card" style="padding:0;overflow:hidden">
+        <div style="padding:16px 20px 12px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
+          <span class="card-title" style="margin:0">BULUNAN CİHAZLAR</span>
+          <span id="device-count" style="font-size:12px;color:var(--muted)">— cihaz</span>
+        </div>
+        <div style="overflow-x:auto">
+          <table>
+            <thead>
+              <tr>
+                <th>IP Adresi</th>
+                <th>MAC Adresi</th>
+                <th>Vendor</th>
+                <th>Tür</th>
+                <th>Güvenilir?</th>
+              </tr>
+            </thead>
+            <tbody id="device-tbody">
+              <tr><td colspan="5" style="text-align:center;color:var(--muted);padding:32px">
+                Tarama başlatın — cihazlar burada listelenecek
+              </td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- SAĞ: Bypass Paneli -->
+    <div style="display:flex;flex-direction:column;gap:14px">
+      <div class="card">
+        <div class="card-title">2 · NAC / MAB BYPASS</div>
+
+        <!-- Seçili cihaz -->
+        <div style="margin-bottom:14px">
+          <label>Hedef Cihaz (Tablodan Seç)</label>
+          <div class="selected-device" id="selected-box">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"></rect><path d="M8 21h8M12 17v4"></path></svg>
+            <span id="selected-label" style="color:var(--muted);font-size:13px">← Soldan bir cihaz satırına tıklayın</span>
+          </div>
+        </div>
+
+        <!-- Interface -->
+        <div style="margin-bottom:12px">
+          <label>Kullanılacak Interface</label>
+          <input id="bypass-iface" type="text" value="vboxnet0" placeholder="eth0, enp3s0, vboxnet0…">
+        </div>
+
+        <!-- Hold süresi -->
+        <div style="margin-bottom:16px">
+          <label>Taklit Süresi: <span id="hold-label" class="mono" style="color:var(--accent)">30s</span></label>
+          <input type="range" id="hold-range" min="5" max="300" value="30" step="5"
+            oninput="document.getElementById('hold-label').textContent=this.value+'s'">
+          <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-top:2px">
+            <span>5s</span><span>2.5dk</span><span>5dk</span>
+          </div>
+        </div>
+
+        <!-- Aksiyon butonları -->
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn btn-primary" id="btn-bypass" onclick="startBypass()" disabled>
+            🔓 Bypass Başlat
+          </button>
+          <button class="btn btn-danger btn-sm" id="btn-restore" onclick="doRestore()" disabled>
+            🔁 Acil Geri Yükle
+          </button>
+        </div>
+      </div>
+
+      <!-- Canlı log / ilerleme -->
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+          <div class="card-title" style="margin:0">CANLI İLERLEME · <span style="color:var(--accent)">WebSocket</span></div>
+          <span id="bypass-job" class="mono" style="font-size:11px;color:var(--muted)"></span>
+        </div>
+
+        <!-- Aşama çubukları -->
+        <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:12px">
+          <div>
+            <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px">
+              <span>1. Orijinal MAC tespit</span>
+              <span id="st-detect" class="badge badge-muted">Bekliyor</span>
+            </div>
+            <div class="progress-bar"><div class="progress-fill" id="pb-detect" style="width:0%;background:var(--muted)"></div></div>
+          </div>
+          <div>
+            <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px">
+              <span>2. MAC spoofing</span>
+              <span id="st-spoof" class="badge badge-muted">Bekliyor</span>
+            </div>
+            <div class="progress-bar"><div class="progress-fill" id="pb-spoof" style="width:0%;background:var(--muted)"></div></div>
+          </div>
+          <div>
+            <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px">
+              <span id="hold-step-label">3. Taklit aktif (30s)</span>
+              <span id="st-hold" class="badge badge-muted">Bekliyor</span>
+            </div>
+            <div class="progress-bar"><div class="progress-fill" id="pb-hold" style="width:0%;background:var(--amber)"></div></div>
+          </div>
+          <div>
+            <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px">
+              <span>4. Orijinal MAC geri yükleme</span>
+              <span id="st-restore" class="badge badge-muted">Bekliyor</span>
+            </div>
+            <div class="progress-bar"><div class="progress-fill" id="pb-restore" style="width:0%;background:var(--muted)"></div></div>
+          </div>
+        </div>
+
+        <!-- Log -->
+        <div class="logbox" id="logbox">[—] Bypass başlamadı...</div>
+
+        <!-- Sonuç özeti -->
+        <div id="result-box" style="display:none;margin-top:12px;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px;font-size:12px">
+          <div id="result-content"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+"use strict";
+const esc = s => String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+/* ---------- durum ---------- */
+let selectedDevice = null;
+let bypassJobId    = null;
+let bypassWs       = null;
+let originalMac    = null;
+let holdTimer      = null;
+
+const DEVICE_TYPE_TR = {
+  printer:'Yazıcı', camera:'IP Kamera', switch:'Switch/AP',
+  voip:'VoIP', iot:'IoT', null:'—', undefined:'—'
+};
+
+/* ---------- log ---------- */
+function addLog(msg, cls='') {
+  const box = document.getElementById('logbox');
+  const now = new Date().toLocaleTimeString('tr-TR');
+  const line = document.createElement('div');
+  if (cls) line.className = cls;
+  line.textContent = `[${now}] ${msg}`;
+  box.appendChild(line);
+  box.scrollTop = box.scrollHeight;
+}
+function clearLog() {
+  document.getElementById('logbox').innerHTML = '';
+}
+
+/* ---------- aşama güncelle ---------- */
+function setStage(id, pbId, label, badgeClass, pct, color) {
+  const st = document.getElementById(id);
+  st.textContent = label;
+  st.className = 'badge ' + badgeClass;
+  const pb = document.getElementById(pbId);
+  pb.style.width = pct + '%';
+  pb.style.background = color;
+}
+function resetStages() {
+  ['detect','spoof','hold','restore'].forEach(k => {
+    setStage('st-'+k, 'pb-'+k, 'Bekliyor', 'badge-muted', 0, 'var(--muted)');
+  });
+  document.getElementById('result-box').style.display = 'none';
+}
+
+/* ---------- MAC tarama ---------- */
+async function startScan() {
+  const iface  = document.getElementById('iface').value.trim();
+  const subnet = document.getElementById('subnet').value.trim();
+  if (!iface || !subnet) { alert('Interface ve subnet zorunlu.'); return; }
+
+  const btn = document.getElementById('btn-scan');
+  const lbl = document.getElementById('scan-label');
+  const st  = document.getElementById('scan-status');
+  btn.disabled = true;
+  lbl.textContent = '⏳ Taranıyor…';
+  st.textContent  = '';
+
+  try {
+    const res = await fetch('/api/v1/nac/scan', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ interface: iface, subnet })
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(()=>({detail:'Bilinmeyen hata'}));
+      throw new Error(err.detail || res.statusText);
+    }
+    const data = await res.json();
+    renderTable(data.devices || []);
+    st.textContent = `${data.device_count} cihaz bulundu`;
+    st.style.color = 'var(--green)';
+  } catch(e) {
+    st.textContent = '⚠ ' + e.message;
+    st.style.color = 'var(--red)';
+  } finally {
+    btn.disabled = false;
+    lbl.textContent = '🔍 MAC Tara';
+  }
+}
+
+function renderTable(devices) {
+  const tbody = document.getElementById('device-tbody');
+  document.getElementById('device-count').textContent = devices.length + ' cihaz';
+  if (!devices.length) {
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:32px">Cihaz bulunamadı</td></tr>';
+    return;
+  }
+  tbody.innerHTML = devices.map((d,i) => {
+    const trusted = d.is_trusted_hint;
+    const typeTr  = DEVICE_TYPE_TR[d.device_type] || d.device_type || '—';
+    return `<tr class="selectable" data-i="${i}" onclick="selectDevice(${i},${esc(JSON.stringify(JSON.stringify(d)))})">
+      <td class="mono" style="color:var(--accent)">${esc(d.ip)}</td>
+      <td class="mono" style="font-size:12px">${esc(d.mac)}</td>
+      <td style="color:var(--muted);font-size:12px">${esc(d.vendor||'—')}</td>
+      <td>${esc(typeTr)}</td>
+      <td>${trusted
+        ? '<span class="badge badge-amber">⚠ Güvenilir Hint</span>'
+        : '<span class="badge badge-muted">Normal</span>'}</td>
+    </tr>`;
+  }).join('');
+  // cihazları JS'e sakla
+  window._nacDevices = devices;
+}
+
+function selectDevice(i, _) {
+  const d = window._nacDevices[i];
+  if (!d) return;
+  selectedDevice = d;
+
+  // satır vurgula
+  document.querySelectorAll('#device-tbody tr').forEach((r,ri) =>
+    r.classList.toggle('selected', ri === i));
+
+  // seçili cihaz göstergesi
+  const label = document.getElementById('selected-label');
+  const box   = document.getElementById('selected-box');
+  label.innerHTML =
+    `<span class="mono" style="color:var(--accent)">${esc(d.ip)}</span> &nbsp;` +
+    `<span class="mono" style="color:var(--muted)">${esc(d.mac)}</span> &nbsp;` +
+    `<span style="color:var(--text)">${esc(d.vendor||'')}</span>`;
+  box.style.borderColor = 'var(--accent)';
+
+  // bypass interface'i tarama interface'iyle eşle
+  document.getElementById('bypass-iface').value = document.getElementById('iface').value;
+  document.getElementById('btn-bypass').disabled = false;
+}
+
+function clearTable() {
+  document.getElementById('device-tbody').innerHTML =
+    '<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:32px">Tarama başlatın — cihazlar burada listelenecek</td></tr>';
+  document.getElementById('device-count').textContent = '— cihaz';
+  document.getElementById('scan-status').textContent = '';
+  selectedDevice = null;
+  document.getElementById('selected-label').textContent = '← Soldan bir cihaz satırına tıklayın';
+  document.getElementById('selected-label').style.color = 'var(--muted)';
+  document.getElementById('selected-box').style.borderColor = 'var(--accent)';
+  document.getElementById('btn-bypass').disabled = true;
+  window._nacDevices = [];
+}
+
+/* ---------- bypass başlat ---------- */
+async function startBypass() {
+  if (!selectedDevice) return;
+  const iface      = document.getElementById('bypass-iface').value.trim();
+  const holdSecs   = parseInt(document.getElementById('hold-range').value, 10);
+  if (!iface) { alert('Interface zorunlu.'); return; }
+
+  // UI kilitle
+  document.getElementById('btn-bypass').disabled = true;
+  document.getElementById('btn-restore').disabled = true;
+  clearLog();
+  resetStages();
+  document.getElementById('hold-step-label').textContent = `3. Taklit aktif (${holdSecs}s)`;
+
+  addLog('Bypass isteği gönderiliyor…', 'log-info');
+
+  try {
+    const res = await fetch('/api/v1/nac/bypass', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        interface:     iface,
+        target_ip:     selectedDevice.ip,
+        target_mac:    selectedDevice.mac,
+        target_vendor: selectedDevice.vendor,
+        hold_seconds:  holdSecs,
+      })
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(()=>({detail:'Bilinmeyen hata'}));
+      throw new Error(err.detail || res.statusText);
+    }
+    const data = await res.json();
+    bypassJobId = data.job_id;
+    document.getElementById('bypass-job').textContent = 'job: ' + bypassJobId.slice(0,8);
+    addLog('Job başlatıldı → ' + bypassJobId, 'log-info');
+
+    // WebSocket bağlan
+    connectWs(data.ws_url, holdSecs);
+    document.getElementById('btn-restore').disabled = false;
+  } catch(e) {
+    addLog('⚠ Hata: ' + e.message, 'log-err');
+    document.getElementById('btn-bypass').disabled = false;
+  }
+}
+
+/* ---------- WebSocket ---------- */
+function connectWs(wsUrl, holdSecs) {
+  const proto = location.protocol === 'https:' ? 'wss' : 'ws';
+  const url   = `${proto}://${location.host}${wsUrl}`;
+  if (bypassWs) bypassWs.close();
+  bypassWs = new WebSocket(url);
+
+  bypassWs.onmessage = (ev) => {
+    try { handleJobUpdate(JSON.parse(ev.data), holdSecs); } catch(e) {}
+  };
+  bypassWs.onerror = () => addLog('WebSocket bağlantı hatası', 'log-err');
+  bypassWs.onclose = () => addLog('WebSocket bağlantısı kapandı.', 'log-muted');
+}
+
+function handleJobUpdate(payload, holdSecs) {
+  const status = payload.status;
+  const logs   = payload.logs || [];
+
+  // logları yansıt (son eklenenler)
+  if (logs.length) {
+    const last = logs[logs.length - 1];
+    const cls  = last.includes('hata') || last.includes('fail') ? 'log-err'
+               : last.includes('geri') || last.includes('restore') ? 'log-warn'
+               : last.includes('değiştirildi') || last.includes('spoof') ? 'log-ok'
+               : 'log-info';
+    addLog(last, cls);
+  }
+
+  // aşama eşleme
+  if (status === 'running' || status === 'discovering') {
+    setStage('st-detect','pb-detect','Tespitte…','badge-amber', 50,'var(--amber)');
+  }
+  if (logs.some(l => l.includes('Orijinal MAC'))) {
+    const m = (logs.find(l=>l.includes('Orijinal MAC'))||'').match(/([0-9a-f:]{17})/i);
+    if (m) originalMac = m[1];
+    setStage('st-detect','pb-detect','Tamamlandı','badge-green',100,'var(--green)');
+    setStage('st-spoof', 'pb-spoof', 'Uygulanıyor…','badge-amber',50,'var(--amber)');
+  }
+  if (logs.some(l => l.includes('değiştirildi'))) {
+    setStage('st-spoof','pb-spoof','Tamamlandı','badge-green',100,'var(--green)');
+    setStage('st-hold', 'pb-hold', 'Aktif…','badge-amber', 10,'var(--amber)');
+    // geri sayım animasyonu
+    let elapsed = 0;
+    if (holdTimer) clearInterval(holdTimer);
+    holdTimer = setInterval(() => {
+      elapsed += 1;
+      const pct = Math.min((elapsed / holdSecs) * 100, 100);
+      document.getElementById('pb-hold').style.width = pct + '%';
+      if (elapsed >= holdSecs) clearInterval(holdTimer);
+    }, 1000);
+  }
+  if (logs.some(l => l.includes('geri al') || l.includes('restore'))) {
+    if (holdTimer) clearInterval(holdTimer);
+    setStage('st-hold',   'pb-hold',   'Bitti','badge-green',100,'var(--green)');
+    setStage('st-restore','pb-restore','Geri yükleniyor…','badge-amber',50,'var(--amber)');
+  }
+  if (status === 'done') {
+    setStage('st-restore','pb-restore','Tamamlandı','badge-green',100,'var(--green)');
+    showResult(payload.results?.[0]);
+    document.getElementById('btn-bypass').disabled = false;
+    document.getElementById('btn-restore').disabled = true;
+  }
+  if (status === 'error') {
+    addLog('⚠ İş hatası: ' + (payload.error||'bilinmiyor'), 'log-err');
+    document.getElementById('btn-bypass').disabled = false;
+  }
+}
+
+function showResult(result) {
+  if (!result) return;
+  const box = document.getElementById('result-box');
+  const ok  = result.success;
+  box.style.display = 'block';
+  box.style.borderColor = ok ? 'var(--green)' : 'var(--red)';
+  document.getElementById('result-content').innerHTML =
+    `<div style="font-weight:600;color:${ok?'var(--green)':'var(--red)'};margin-bottom:6px">
+       ${ok ? '✓ Bypass başarılı' : '✗ Bypass başarısız'}
+     </div>
+     <div style="color:var(--muted)">${esc(result.note||'')}</div>
+     ${result.original_mac ? `<div style="margin-top:6px">
+       Orijinal MAC geri yüklendi: <span class="mono" style="color:var(--accent)">${esc(result.original_mac)}</span>
+     </div>` : ''}`;
+}
+
+/* ---------- acil geri yükle ---------- */
+async function doRestore() {
+  const iface = document.getElementById('bypass-iface').value.trim();
+  if (!iface || !originalMac) {
+    alert('Orijinal MAC henüz tespit edilemedi — job loglarına bakın.');
+    return;
+  }
+  if (!confirm(`${iface} interface'ini ${originalMac} adresine geri yüklemek istediğinizden emin misiniz?`)) return;
+
+  addLog('Acil geri yükleme isteniyor…', 'log-warn');
+  try {
+    const res = await fetch(`/api/v1/nac/restore?interface=${encodeURIComponent(iface)}&original_mac=${encodeURIComponent(originalMac)}`,
+      { method:'POST' });
+    const data = await res.json();
+    if (data.success) {
+      addLog('✓ MAC geri yüklendi → ' + data.mac, 'log-ok');
+      setStage('st-restore','pb-restore','Geri yüklendi','badge-green',100,'var(--green)');
+    } else {
+      addLog('⚠ Geri yükleme başarısız: ' + data.message, 'log-err');
+    }
+  } catch(e) {
+    addLog('⚠ Hata: ' + e.message, 'log-err');
+  }
+  document.getElementById('btn-restore').disabled = true;
+  document.getElementById('btn-bypass').disabled  = false;
+}
+</script>
+
+<!-- iframe / standalone uyumu -->
+<script>
+if (window.top !== window.self) {
+  const s = document.createElement('style');
+  s.textContent = '.brand,nav{display:none!important}.panel-head{justify-content:flex-end!important}';
+  document.head.appendChild(s);
+}
+document.addEventListener('click', e => {
+  const el = e.target.closest('[data-go]');
+  if (!el) return;
+  if (window.top !== window.self) {
+    e.preventDefault();
+    window.top.postMessage({ go: el.dataset.go }, '*');
+  }
+});
+</script>
+<script src="/static/token.js"></script>
+</body>
+</html>

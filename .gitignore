@@ -1,0 +1,13 @@
+__pycache__/
+*.pyc
+.pytest_cache/
+*.db
+data/raw/*
+!data/raw/.gitkeep
+data/reports/*
+!data/reports/.gitkeep
+data/tickets/*
+!data/tickets/.gitkeep
+*.ccache
+nohup.out
+.env

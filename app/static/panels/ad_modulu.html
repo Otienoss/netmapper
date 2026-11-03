@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AD Keşif</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  body { margin:0; background:#0B0F14; font-family:'Inter',sans-serif; color:#E6EDF3; }
+  .mono { font-family:'JetBrains Mono',monospace; }
+  a { color:#2DD4BF; text-decoration:none; }
+  input { background:#0B0F14; border:1px solid #1F2A35; color:#E6EDF3; border-radius:8px; padding:10px 12px; font-size:13px; font-family:'JetBrains Mono',monospace; }
+  input:focus { outline:none; border-color:#2DD4BF; }
+  input::placeholder { color:#5b6671; }
+  label { font-size:12px; color:#8B98A5; display:block; margin-bottom:6px; }
+  .sec-title { font-size:14px; font-weight:600; border-left:3px solid #2DD4BF; padding-left:9px; }
+  .task { display:flex; align-items:flex-start; gap:10px; padding:11px 12px; border:1px solid #1F2A35; border-radius:8px; cursor:pointer; transition:.15s; }
+  .task:hover { border-color:#2F3B47; }
+  .task:has(input:checked) { border-color:#2DD4BF; background:#0F2320; }
+  .task input { accent-color:#2DD4BF; width:15px; height:15px; margin-top:2px; padding:0; }
+  .task .warn { color:#F59E0B; font-size:10.5px; }
+  .badge { font-size:11px; padding:3px 8px; border-radius:6px; }
+  .b-wait { color:#8B98A5; background:#1A2129; }
+  .b-run  { color:#F59E0B; background:#241B0A; }
+  .b-done { color:#22C55E; background:#0F2419; }
+  .b-err  { color:#EF4444; background:#2A1212; }
+  .track { height:6px; background:#0B0F14; border-radius:4px; }
+  .track > div { height:100%; width:0; background:#1F2A35; border-radius:4px; transition:width .4s; }
+  #form-err { color:#EF4444; font-size:12px; white-space:pre-line; }
+  .risk { font-size:11px; font-weight:600; padding:3px 9px; border-radius:6px; white-space:nowrap; }
+  .risk.high { color:#EF4444; background:#2A1212; }
+  .risk.critical { color:#FCA5A5; background:#3B0A0A; border:1px solid #7F1D1D; }
+  .risk.medium { color:#F59E0B; background:#241B0A; }
+  .risk.low { color:#22C55E; background:#0F2419; }
+  .risk.info { color:#8B98A5; background:#1A2129; }
+  .kind { font-size:10.5px; padding:3px 8px; border-radius:999px; background:#10161E; border:1px solid #1F2A35; color:#B7C2CC; white-space:nowrap; }
+  .fcard { background:#10161E; border:1px solid #1F2A35; border-radius:10px; padding:6px 14px 10px; }
+  .frow { display:grid; grid-template-columns:86px 128px 1fr; gap:12px; padding:10px 0; border-bottom:1px dashed #1A2129; font-size:12.5px; align-items:start; }
+  .frow:last-child { border-bottom:0; }
+  .frow .msg { line-height:1.55; }
+  .frow .spn { color:#2DD4BF; font-size:11.5px; }
+  .frow .hash { color:#8B98A5; font-size:10.5px; word-break:break-all; margin-top:3px; }
+  .viewbtn { padding:6px 13px; border-radius:999px; color:#8B98A5; font-size:12px; border:1px solid #1F2A35; cursor:pointer; background:none; font-family:inherit; }
+  .viewbtn.active { background:#0F2419; color:#22C55E; border-color:#1F3A2A; }
+</style>
+</head>
+<body>
+<div class="panel-wrap" style="width:100%;max-width:1360px;margin:0 auto;box-sizing:border-box;padding:24px 28px;display:flex;flex-direction:column;gap:18px">
+
+  <div class="panel-head" style="display:flex;justify-content:space-between;align-items:center">
+    <div class="brand" style="display:flex;align-items:center;gap:10px">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2DD4BF" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M12 2v4M12 18v4M4.9 4.9l2.8 2.8M16.3 16.3l2.8 2.8M2 12h4M18 12h4M4.9 19.1l2.8-2.8M16.3 7.7l2.8-2.8"></path></svg>
+      <span style="font-size:17px;font-weight:700">NetMapper</span>
+    </div>
+    <nav style="display:flex;gap:4px">
+      <a href="/static/panels/dashboard.html" style="padding:7px 14px;border-radius:8px;font-size:13px;color:#8B98A5">Dashboard</a>
+      <a href="/static/panels/yeni_tarama.html" style="padding:7px 14px;border-radius:8px;font-size:13px;color:#8B98A5">Yeni Tarama</a>
+      <span style="padding:7px 14px;border-radius:8px;background:#121820;border:1px solid #2DD4BF;font-size:13px">AD Keşif</span>
+      <a href="/static/panels/host_envanteri.html" style="padding:7px 14px;border-radius:8px;font-size:13px;color:#8B98A5">Envanter</a>
+    </nav>
+    <div style="width:24px"></div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+    <!-- Sol: AD parametreleri -->
+    <form id="ad-form" style="background:#121820;border:1px solid #1F2A35;border-radius:12px;padding:24px;display:flex;flex-direction:column;gap:16px">
+      <div class="sec-title">AD Keşif Parametreleri <span style="font-weight:400;color:#8B98A5;font-size:11px">· Impacket</span></div>
+
+      <div>
+        <label for="target">DC IP Adresi</label>
+        <input id="target" type="text" placeholder="10.0.0.5" style="width:100%;box-sizing:border-box" required>
+      </div>
+      <div>
+        <label for="dc_hostname">DC Hostname (FQDN) <span style="color:#5b6671">(BloodHound için — boşsa dc.&lt;domain&gt; denenir)</span></label>
+        <input id="dc_hostname" type="text" placeholder="winterfell.north.sevenkingdoms.local" style="width:100%;box-sizing:border-box">
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div>
+          <label for="domain">Domain</label>
+          <input id="domain" type="text" placeholder="corp.local" style="width:100%;box-sizing:border-box" required>
+        </div>
+        <div>
+          <label for="username">Kullanıcı</label>
+          <input id="username" type="text" placeholder="alice" style="width:100%;box-sizing:border-box" required>
+        </div>
+      </div>
+      <div>
+        <label for="password">Şifre <span style="color:#5b6671">(yalnızca bu istekte yaşar — loglanmaz, DB'ye yazılmaz)</span></label>
+        <input id="password" type="password" placeholder="••••••••" style="width:100%;box-sizing:border-box" required autocomplete="off">
+      </div>
+
+      <div>
+        <label>Görevler</label>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <label class="task" for="t-dcinfo">
+            <input id="t-dcinfo" type="checkbox" value="dcinfo" checked>
+            <div><div style="font-size:13px;font-weight:500">DC Envanteri <span class="mono" style="color:#8B98A5">LDAP · salt-okunur</span></div>
+            <div style="font-size:11px;color:#8B98A5">Domain Controller sAMAccountName + dNSHostName bilgisi</div></div>
+          </label>
+          <label class="task" for="t-spn">
+            <input id="t-spn" type="checkbox" value="spn" checked>
+            <div><div style="font-size:13px;font-weight:500">Kerberoasting <span class="mono" style="color:#8B98A5">GetUserSPNs</span></div>
+            <div style="font-size:11px;color:#8B98A5">SPN'li hesaplar + TGS hash'leri</div></div>
+          </label>
+          <label class="task" for="t-asrep">
+            <input id="t-asrep" type="checkbox" value="asrep" checked>
+            <div><div style="font-size:13px;font-weight:500">AS-REP Roast <span class="mono" style="color:#8B98A5">GetNPUsers</span></div>
+            <div style="font-size:11px;color:#8B98A5">Pre-auth kapalı hesaplar + TGT hash'leri</div></div>
+          </label>
+          <label class="task" for="t-dcsync">
+            <input id="t-dcsync" type="checkbox" value="dcsync">
+            <div><div style="font-size:13px;font-weight:500">DCSync / NTDS Dökümü <span class="mono" style="color:#8B98A5">secretsdump</span> <span class="warn">● hassas</span></div>
+            <div style="font-size:11px;color:#8B98A5">Domain NTLM hash'lerinin çekilmesi (yalnızca izinli test ortamları)</div></div>
+          </label>
+          <label class="task" for="t-acl">
+            <input id="t-acl" type="checkbox" value="acl">
+            <div><div style="font-size:13px;font-weight:500">ACL / BloodHound Keşfi <span class="mono" style="color:#8B98A5">bloodhound-python</span> <span class="warn">● yüksek getiri</span></div>
+            <div style="font-size:11px;color:#8B98A5">Yetki yükseltme yollarını (hesap → DOMAIN ADMINS) grafikte bulur</div></div>
+          </label>
+          <label class="task" for="t-cve">
+            <input id="t-cve" type="checkbox" value="cve">
+            <div><div style="font-size:13px;font-weight:500">Kritik CVE Tarayıcısı <span class="mono" style="color:#8B98A5">ZeroLogon · PrintNightmare · NoPac</span> <span class="warn">● check-only</span></div>
+            <div style="font-size:11px;color:#8B98A5">Sömürü yok: yalnızca CVE-2020-1472 / 2021-34527 / 2021-42278 varlığı test edilir</div></div>
+          </label>
+        </div>
+      </div>
+
+      <div>
+        <label for="privesc_start">Başlangıç hesabı <span style="color:#5b6671">(ACL görevi için, opsiyonel — boşsa en kısa yol otomatik seçilir)</span></label>
+        <input id="privesc_start" type="text" placeholder="sql_svc" style="width:100%;box-sizing:border-box">
+      </div>
+
+      <div id="form-err"></div>
+
+      <button id="start-btn" type="submit" style="background:#2DD4BF;color:#0B0F14;border:none;padding:12px;border-radius:8px;font-weight:600;font-size:13px;cursor:pointer;margin-top:2px">AD Keşfi Başlat</button>
+      <div style="font-size:11px;color:#8B98A5">Yalnızca yetki verdiğiniz domain ortamlarında kullanın.</div>
+    </form>
+    <!-- Sağ: canlı ilerleme (WebSocket) -->
+    <div style="background:#121820;border:1px solid #1F2A35;border-radius:12px;padding:24px;display:flex;flex-direction:column;gap:16px">
+      <div class="sec-title">Canlı İlerleme <span style="font-weight:400;color:#8B98A5;font-size:11px">· WebSocket</span></div>
+
+      <div class="mono" id="job-id" style="font-size:12px;color:#8B98A5">job_id: —</div>
+
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <span style="font-size:13px">1. Bağlantı &amp; domain keşfi</span>
+          <span class="badge b-wait" id="st1-badge">Bekliyor</span>
+        </div>
+        <div class="track"><div id="st1-bar"></div></div>
+
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px">
+          <span style="font-size:13px">2. Impacket görevleri</span>
+          <span class="badge b-wait" id="st2-badge">Bekliyor</span>
+        </div>
+        <div class="track"><div id="st2-bar"></div></div>
+
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px">
+          <span style="font-size:13px">3. Kayıt &amp; JSON havuzu</span>
+          <span class="badge b-wait" id="st3-badge">Bekliyor</span>
+        </div>
+        <div class="track"><div id="st3-bar"></div></div>
+      </div>
+
+      <div style="background:#0B0F14;border-radius:8px;padding:12px;margin-top:4px">
+        <div id="logs" class="mono" style="font-size:11px;color:#8B98A5;line-height:1.8;max-height:190px;overflow-y:auto;word-break:break-word">[—] AD keşif başlamadı…</div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- SÖMÜR (Auto-Pwn) — sunucu kapıları kapalıysa 403 döner -->
+  <div style="background:#141017;border:1px solid #3F1D1D;border-radius:12px;padding:20px 22px;display:flex;flex-direction:column;gap:12px">
+    <div class="sec-title" style="border-color:#EF4444">💥 SÖMÜR — Auto-Pwn <span style="font-weight:400;color:#8B98A5;font-size:11px">· NoPac (CVE-2021-42278 + CVE-2021-42287)</span></div>
+    <div class="mono" style="font-size:11.5px;color:#8B98A5;line-height:1.7">
+      Zincir: sahte makine hesabı oluştur → SPN'leri temizle → sAMAccountName'i DC'nin <span style="color:#E6EDF3">$'suz</span> adıyla yeniden adlandır → TGT al → hesabı geri adlandır → S4U2self: KDC <span style="color:#E6EDF3">$</span> ekleyip GERÇEK DC hesabını bulur → <span style="color:#EF4444">Domain Admin kimliğiyle cifs/DC bileti</span> <span class="mono">data/tickets/&lt;job&gt;/</span> altına 0600 ile indirilir.
+    </div>
+    <div style="background:#2A1212;border:1px solid #7F1D1D;border-radius:8px;padding:10px 12px;font-size:12px;color:#FECACA;line-height:1.6">
+      ⚠️ <b>Gerçek AD değişikliği yapar</b> (nesne oluşturma + yeniden adlandırma + DA bilet talebi). Sunucuda <span class="mono">EXPLOIT_ENABLED=true</span> ve <span class="mono">EXPLOIT_ALLOWLIST</span> tanımlı değilse çalışmaz (403). Yalnızca <b>izinli</b> laboratuvarda kullanın.
+    </div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+      <input id="da-user" type="text" placeholder="DA hedef hesap (varsayılan: Administrator)" style="flex:1;min-width:280px">
+      <button id="pwn-btn" type="button" style="background:#7F1D1D;color:#FECACA;border:1px solid #991B1B;padding:11px 22px;border-radius:8px;font-weight:600;font-size:13px;cursor:pointer">💥 SÖMÜR</button>
+    </div>
+    <div id="pwn-status" class="mono" style="font-size:11.5px;color:#8B98A5"></div>
+  </div>
+
+  <!-- Bulgular -->
+  <div style="background:#121820;border:1px solid #1F2A35;border-radius:12px;padding:20px 22px;display:flex;flex-direction:column;gap:14px">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
+      <div class="sec-title" style="margin:0">AD Bulguları <span id="f-count" style="font-weight:400;color:#8B98A5;font-size:11px"></span></div>
+      <div style="display:flex;gap:8px">
+        <button class="viewbtn active" id="view-job" type="button">Bu Job</button>
+        <button class="viewbtn" id="view-pool" type="button">Tüm Havuz</button>
+        <a id="json-btn" class="viewbtn" style="display:none;text-decoration:none" href="#" target="_blank">⬇ JSON</a>
+      </div>
+    </div>
+    <div id="findings" class="fcard">
+      <div style="color:#8B98A5;padding:14px 0;font-size:12.5px">Henüz bulgu yok — soldan AD keşfi başlatın (veya bir job tamamlanınca otomatik dolar).</div>
+    </div>
+  </div>
+
+</div>
+<script>
+"use strict";
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g,
+  c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+
+const form = document.getElementById("ad-form");
+const startBtn = document.getElementById("start-btn");
+const formErr = document.getElementById("form-err");
+const jobEl = document.getElementById("job-id");
+const logsEl = document.getElementById("logs");
+const jsonBtn = document.getElementById("json-btn");
+
+let currentJob = null, finished = false, fallbackTimer = null, viewMode = "job";
+
+function humanError(data) {
+  if (!data) return "Bilinmeyen hata";
+  if (typeof data.detail === "string") return data.detail;
+  if (Array.isArray(data.detail))
+    return data.detail.map(d => d.msg || JSON.stringify(d)).join("\n");
+  return JSON.stringify(data);
+}
+
+function setStage(n, text, cls, pct) {
+  const badge = document.getElementById(`st${n}-badge`);
+  badge.textContent = text;
+  badge.className = "badge " + cls;
+  const bar = document.getElementById(`st${n}-bar`);
+  bar.style.width = Math.max(0, Math.min(100, pct)) + "%";
+  bar.style.background =
+    cls === "b-done" ? "#22C55E" : cls === "b-err" ? "#EF4444" :
+    cls === "b-run" ? "#F59E0B" : "#1F2A35";
+}
+
+function resetStages() {
+  for (let i = 1; i <= 3; i++) setStage(i, "Bekliyor", "b-wait", 0);
+  logsEl.innerHTML = "[—] AD keşif başlatıldı…";
+}
+
+function render(state) {
+  const st = state.status;
+  const p = state.progress || {};
+  const total = p.task_total || 0, done = p.task_done || 0;
+  const pct = total ? Math.round((done / total) * 100) : 0;
+
+  if (st === "pending") setStage(1, "Sırada", "b-wait", 0);
+  else if (st === "discovering") setStage(1, "Bağlanılıyor…", "b-run", 50);
+  else if (st === "scanning") {
+    setStage(1, "Tamamlandı", "b-done", 100);
+    setStage(2, total ? `${done} / ${total} görev` : "Çalışıyor…", "b-run",
+             total ? pct : 15);
+  } else if (st === "normalizing") {
+    setStage(1, "Tamamlandı", "b-done", 100);
+    setStage(2, total ? `${total} / ${total} görev` : "Tamamlandı", "b-done", 100);
+    setStage(3, "Kaydediliyor…", "b-run", 70);
+  } else if (st === "done") {
+    finished = true;
+    for (let i = 1; i <= 3; i++) setStage(i, "Tamamlandı", "b-done", 100);
+    loadFindings();
+  } else if (st === "error") {
+    finished = true;
+    for (let i = 1; i <= 3; i++) {
+      const b = document.getElementById(`st${i}-badge`);
+      if (b.className.includes("b-run") || b.className.includes("b-wait"))
+        setStage(i, "Hata", "b-err", i === 1 ? 50 : (i === 2 ? pct : 70));
+    }
+    loadFindings();
+  }
+
+  if (state.logs && state.logs.length) {
+    logsEl.innerHTML = state.logs.map(l => esc(l)).join("<br>");
+    logsEl.scrollTop = logsEl.scrollHeight;
+  }
+  if (state.error)
+    logsEl.innerHTML += `<br><span style="color:#EF4444">${esc(state.error)}</span>`;
+}
+
+function connectWS(wsUrl) {
+  const proto = location.protocol === "https:" ? "wss" : "ws";
+  let ws;
+  try { ws = new WebSocket(`${proto}://${location.host}${wsUrl}`); }
+  catch (e) { startFallbackPolling(); return; }
+  ws.onmessage = (ev) => {
+    try { render(JSON.parse(ev.data)); }
+    catch (e) { console.error("ws parse:", e); }
+  };
+  ws.onclose = () => { if (!finished) startFallbackPolling(); };
+}
+
+function startFallbackPolling() {
+  if (fallbackTimer || !currentJob || finished) return;
+  let tries = 0;
+  fallbackTimer = setInterval(async () => {
+    if (++tries > 450 || finished) { clearInterval(fallbackTimer); return; }
+    try {
+      const r = await fetch(`/api/v1/jobs/${currentJob}`);
+      if (r.ok) render(await r.json());
+    } catch (e) { /* sessizce devam */ }
+  }, 2000);
+}
+
+form.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  formErr.textContent = "";
+  const tasks = [...form.querySelectorAll('input[type=checkbox]:checked')].map(c => c.value);
+  if (!tasks.length) { formErr.textContent = "En az bir görev seçin."; return; }
+
+  const payload = {
+    target: document.getElementById("target").value.trim(),
+    domain: document.getElementById("domain").value.trim(),
+    username: document.getElementById("username").value.trim(),
+    password: document.getElementById("password").value,
+    tasks,
+    privesc_start: document.getElementById("privesc_start").value.trim() || null,
+    dc_hostname: document.getElementById("dc_hostname").value.trim() || null,
+  };
+
+  startBtn.disabled = true;
+  finished = false;
+  resetStages();
+  try {
+    const resp = await fetch("/api/v1/scan/ad", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    const data = await resp.json();
+    if (!resp.ok) throw new Error(humanError(data));
+    currentJob = data.job_id;
+    jobEl.textContent = `job_id: ${currentJob.slice(0, 12)}…`;
+    jsonBtn.style.display = "inline-block";
+    jsonBtn.href = `/api/v1/ad/findings?job_id=${currentJob}`;
+    connectWS(data.ws_url);
+  } catch (err) {
+    formErr.textContent = err.message;
+    logsEl.innerHTML = `<span style="color:#EF4444">${esc(err.message)}</span>`;
+  } finally {
+    startBtn.disabled = false;
+  }
+});
+
+// ------------------------------------------------------------- SÖMÜR butonu
+const pwnBtn = document.getElementById("pwn-btn");
+const pwnStatus = document.getElementById("pwn-status");
+
+pwnBtn.addEventListener("click", async () => {
+  formErr.textContent = "";
+  const target = document.getElementById("target").value.trim();
+  const domain = document.getElementById("domain").value.trim();
+  const username = document.getElementById("username").value.trim();
+  const password = document.getElementById("password").value;
+  const dcHostname = document.getElementById("dc_hostname").value.trim() || null;
+  const daUser = document.getElementById("da-user").value.trim() || "Administrator";
+  if (!target || !domain || !username || !password) {
+    pwnStatus.innerHTML = `<span style="color:#EF4444">Sömürü için DC IP, domain, kullanıcı ve şifre zorunlu (yukarıdaki formu doldurun).</span>`;
+    return;
+  }
+
+  // Onay sunucuda EXPLOIT_REQUIRE_CONFIRM ile yönetilir; UI doğrudan başlatır.
+  pwnBtn.disabled = true;
+  pwnStatus.textContent = "Sömürü işi başlatılıyor… (kapılar doğrulanıyor)";
+  finished = false;
+  resetStages();
+  try {
+    const resp = await fetch("/api/v1/ad/exploit", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        target, domain, username, password,
+        confirm: "SÖMÜR",
+        da_user: daUser,
+        dc_hostname: dcHostname,
+      }),
+    });
+    const data = await resp.json();
+    if (!resp.ok) throw new Error(humanError(data));
+    currentJob = data.job_id;
+    jobEl.textContent = `job_id: ${currentJob.slice(0, 12)}… (SÖMÜR)`;
+    jsonBtn.style.display = "inline-block";
+    jsonBtn.href = `/api/v1/ad/findings?job_id=${currentJob}`;
+    pwnStatus.innerHTML =
+      `<span style="color:#F59E0B">Sömürü işi çalışıyor — canlı log sağda; ` +
+      `DA ccache'i bitince bulgularda görünür.</span>` +
+      (data.warning ? `<br><span style="color:#FECACA">${esc(data.warning)}</span>` : "");
+    connectWS(data.ws_url);
+  } catch (err) {
+    pwnStatus.innerHTML = `<span style="color:#EF4444">${esc(err.message)}</span>`;
+  } finally {
+    pwnBtn.disabled = false;
+  }
+});
+
+// ------------------------------------------------------------ bulgular
+const KIND_TR = {
+  dcinfo: "🖥 DC Envanteri",
+  kerberoast: "🔑 Kerberoast", asrep: "🔓 AS-REP", dcsync: "🚨 DCSync",
+  privesc: "🎯 Privesc", cve: "🛡 Kritik CVE", pwn: "💥 SÖMÜR",
+};
+const SEV_TR = { critical: "KRİTİK", high: "Yüksek", medium: "Orta", low: "Düşük", info: "Bilgi" };
+
+async function loadFindings() {
+  const box = document.getElementById("findings");
+  const q = viewMode === "job" && currentJob ? `?job_id=${encodeURIComponent(currentJob)}` : "";
+  try {
+    const data = await (await fetch("/api/v1/ad/findings" + q)).json();
+    const rows = data.findings || [];
+    document.getElementById("f-count").textContent =
+      rows.length ? `· ${rows.length} bulgu` : "";
+    if (!rows.length) {
+      box.innerHTML = `<div style="color:#8B98A5;padding:14px 0;font-size:12.5px">${
+        viewMode === "job" && !currentJob
+          ? "Henüz bulgu yok — soldan AD keşif başlatın."
+          : "Bu kapsamda bulgu yok."}</div>`;
+      return;
+    }
+    box.innerHTML = rows.map(f => `
+      <div class="frow">
+        <div><span class="risk ${esc(f.severity)}">${esc(SEV_TR[f.severity] || f.severity)}</span></div>
+        <div>
+          <div class="kind">${esc(KIND_TR[f.kind] || f.kind)}</div>
+          <div class="mono" style="font-size:11.5px;margin-top:4px;color:#E6EDF3">${esc(f.principal)}</div>
+          ${f.spn ? `<div class="spn mono">${esc(f.spn)}</div>` : ""}
+          ${f.kind === "dcinfo" && f.detail
+            ? `<div class="hash mono">sAMAccountName: ${esc(f.detail.sAMAccountName || "")}${
+                f.detail.dNSHostName
+                  ? ` · dNSHostName: ${esc(f.detail.dNSHostName)}` : ""
+              }</div>` : ""}
+        </div>
+        <div>
+          <div class="msg">${esc(f.message)}</div>
+          ${f.detail && f.detail.hops
+            ? `<div class="hash mono">${esc((f.detail.hops || []).map(h => `${h.from} -[${h.right}]-> ${h.to}`).join("  ·  "))}</div>` : ""}
+          ${f.detail && (f.detail.hash || f.detail.nt_hash)
+            ? `<div class="hash mono" title="${esc(f.detail.hash || f.detail.nt_hash)}">${esc(String(f.detail.hash || f.detail.nt_hash).slice(0, 96))}…</div>` : ""}
+          ${f.detail && f.detail.ccache_path
+            ? `<div class="hash mono" style="color:#FCA5A5">ccache: ${esc(f.detail.ccache_path)}</div>` : ""}
+          ${f.detail && f.detail.outcome
+            ? `<div class="hash mono">sonuç: ${esc(f.detail.outcome)}${
+                f.detail.cleanup_status && f.detail.cleanup_status !== "ok"
+                  ? ` · temizlik: ${esc(f.detail.cleanup_status)}` : ""
+              }${
+                f.detail.cleanup_failed
+                  ? " · ⚠️ TEMİZLİK DOĞRULANAMADI" : ""
+              }</div>` : ""}
+          ${f.detail && f.detail.manual_hint && f.detail.cleanup_failed
+            ? `<div class="hash mono" style="color:#FCA5A5">elle silin: ${esc(f.detail.manual_hint)}</div>` : ""}
+          ${f.detail && f.detail.password_status
+            ? `<div class="hash mono">şifre durumu: ${esc(f.detail.password_status)}</div>` : ""}
+          ${f.detail && f.detail.description
+            ? `<div class="hash" style="white-space:pre-wrap;word-break:break-word">${esc(String(f.detail.description).slice(0, 600))}</div>` : ""}
+        </div>
+      </div>`).join("");
+  } catch (e) {
+    box.innerHTML = `<div style="color:#EF4444;padding:14px 0;font-size:12.5px">Havuz okunamadı: ${esc(e.message)}</div>`;
+  }
+}
+
+document.getElementById("view-job").addEventListener("click", () => {
+  viewMode = "job";
+  document.getElementById("view-job").classList.add("active");
+  document.getElementById("view-pool").classList.remove("active");
+  loadFindings();
+});
+document.getElementById("view-pool").addEventListener("click", () => {
+  viewMode = "pool";
+  document.getElementById("view-pool").classList.add("active");
+  document.getElementById("view-job").classList.remove("active");
+  loadFindings();
+});
+
+loadFindings();   // açılışta tüm havuzu göster
+</script>
+<script>
+/* Kabuk (iframe) içindeyiz: tekrar eden marka/nav gizlenir, data-go
+   bağlantıları üst sekme değişimine çevirilir (postMessage köprüsü). */
+if (window.top !== window.self) {
+  const s = document.createElement("style");
+  s.textContent = ".brand, nav{display:none!important}.panel-head{justify-content:flex-end!important}";
+  document.head.appendChild(s);
+}
+document.addEventListener("click", (e) => {
+  const el = e.target.closest("[data-go]");
+  if (!el) return;
+  if (window.top !== window.self) {
+    e.preventDefault();
+    window.top.postMessage({ go: el.dataset.go }, "*");
+  }
+});
+</script>
+<script src="/static/token.js"></script>
+</body>
+</html>

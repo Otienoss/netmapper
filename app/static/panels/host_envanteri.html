@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Host Envanteri</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  body { margin:0; background:#0B0F14; font-family:'Inter',sans-serif; color:#E6EDF3; }
+  .mono { font-family:'JetBrains Mono',monospace; }
+  a { color:#2DD4BF; text-decoration:none; }
+  table { width:100%; border-collapse:collapse; }
+  th {
+    text-align:left; font-size:11px; color:#8B98A5; font-weight:600;
+    letter-spacing:.05em; text-transform:uppercase;
+    padding:11px 14px; border-bottom:1px solid #1F2A35;
+    position:sticky; top:0; background:#121820; z-index:1;
+  }
+  td { padding:13px 14px; font-size:13px; border-bottom:1px solid #161D25; vertical-align:middle; }
+  tr.hrow.alt td { background:#0F141A; }
+  tr.hrow:hover td { background:#131B24; cursor:pointer; }
+  .ip { color:#2DD4BF; font-weight:600; }
+  .who { font-weight:500; }
+  .sub { color:#8B98A5; font-size:11px; }
+  .sub2 { color:#B7C2CC; font-size:12px; }
+  .pchip {
+    display:inline-block; font-family:'JetBrains Mono',monospace; font-size:11px;
+    background:#0B0F14; border:1px solid #1F2A35; color:#B7C2CC;
+    border-radius:5px; padding:2px 6px; margin:1px 4px 1px 0;
+  }
+  .nikto-pill {
+    font-size:10px; background:#0F2320; border:1px solid #1F3A3A; color:#2DD4BF;
+    border-radius:999px; padding:1px 7px; margin-left:8px; vertical-align:1px;
+    font-family:'Inter',sans-serif; font-weight:600;
+  }
+  .chip { padding:7px 13px; border-radius:999px; color:#8B98A5; font-size:12px; border:1px solid #1F2A35; cursor:pointer; user-select:none; transition:.15s; }
+  .chip:hover { color:#E6EDF3; border-color:#2F3B47; }
+  .chip.active { background:#0F2419; color:#22C55E; border-color:#1F3A2A; }
+  .risk { font-size:11px; font-weight:600; padding:4px 10px; border-radius:6px; white-space:nowrap; }
+  .risk i { font-style:normal; opacity:.65; margin-left:5px; font-size:10px; }
+  .risk.high   { color:#EF4444; background:#2A1212; }
+  .risk.medium { color:#F59E0B; background:#241B0A; }
+  .risk.low    { color:#22C55E; background:#0F2419; }
+  .risk.info   { color:#8B98A5; background:#1A2129; }
+  .detail td { background:#0B0F14 !important; padding:16px; }
+  .dgrid { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+  .dcard { background:#10161E; border:1px solid #1F2A35; border-radius:10px; padding:13px 14px; }
+  .dtitle {
+    font-size:10.5px; letter-spacing:.07em; color:#8B98A5; font-weight:700;
+    text-transform:uppercase; margin-bottom:9px;
+  }
+  .sline { padding:7px 0; border-top:1px dashed #1A2129; font-size:12px; line-height:1.55; }
+  .sline:first-of-type { border-top:0; padding-top:0; }
+  .act span { color:#2DD4BF; font-size:12px; }
+  .meta { margin-top:9px; }
+  #q {
+    background:#0B0F14; border:1px solid #1F2A35; color:#E6EDF3; border-radius:8px;
+    padding:9px 12px; font-size:13px; width:300px; font-family:'JetBrains Mono',monospace;
+    transition:border-color .15s;
+  }
+  #q:focus { outline:none; border-color:#2DD4BF; }
+  #q::placeholder { color:#5b6671; }
+  @media (max-width:980px) { .dgrid { grid-template-columns:1fr; } }
+</style>
+</head>
+<body>
+<div class="panel-wrap" style="width:100%;max-width:1360px;margin:0 auto;box-sizing:border-box;padding:24px 28px;display:flex;flex-direction:column;gap:18px">
+
+  <div class="panel-head" style="display:flex;justify-content:space-between;align-items:center">
+    <div class="brand" style="display:flex;align-items:center;gap:10px">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2DD4BF" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M12 2v4M12 18v4M4.9 4.9l2.8 2.8M16.3 16.3l2.8 2.8M2 12h4M18 12h4M4.9 19.1l2.8-2.8M16.3 7.7l2.8-2.8"></path></svg>
+      <span style="font-size:17px;font-weight:700">NetMapper</span>
+    </div>
+    <nav style="display:flex;gap:4px">
+      <a href="/static/panels/dashboard.html" style="padding:8px 14px;border-radius:8px;font-size:13px;color:#8B98A5">Dashboard</a>
+      <a href="/static/panels/yeni_tarama.html" style="padding:8px 14px;border-radius:8px;font-size:13px;color:#8B98A5">Yeni Tarama</a>
+      <span style="padding:8px 14px;border-radius:8px;background:#121820;border:1px solid #2DD4BF;font-size:13px">Envanter</span>
+      <span title="yakında" style="padding:8px 14px;border-radius:8px;font-size:13px;color:#5b6671">Raporlar</span>
+      <span title="yakında" style="padding:8px 14px;border-radius:8px;font-size:13px;color:#5b6671">Ayarlar</span>
+    </nav>
+    <button id="pdf-btn" style="background:#121820;border:1px solid #1F2A35;color:#E6EDF3;padding:10px 16px;border-radius:8px;font-weight:600;font-size:13px;cursor:pointer">PDF İndir</button>
+  </div>
+
+  <div style="display:flex;gap:10px;align-items:center">
+    <input id="q" type="text" placeholder="IP, hostname, servis, ürün veya nikto bulgusu ara…">
+    <span class="chip active" data-risk="all">Tüm Riskler</span>
+    <span class="chip" data-risk="high">Yüksek</span>
+    <span class="chip" data-risk="medium">Orta</span>
+    <span class="chip" data-risk="low">Düşük</span>
+    <span id="count" style="margin-left:auto;font-size:12px;color:#8B98A5">— cihaz</span>
+  </div>
+
+  <div style="background:#121820;border:1px solid #1F2A35;border-radius:12px;overflow:hidden">
+    <table>
+      <thead>
+        <tr>
+          <th>IP</th><th>Hostname / Vendor</th><th>Açık Portlar</th>
+          <th>Servisler</th><th>Risk</th><th></th>
+        </tr>
+      </thead>
+      <tbody id="tbody">
+        <tr><td colspan="6" style="color:#8B98A5">Yükleniyor…</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+<script>
+"use strict";
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g,
+  c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const RISK_TR = { high: "Yüksek", medium: "Orta", low: "Düşük", info: "Bilgi" };
+
+let hosts = [], riskFilter = "all", query = "";
+
+async function load() {
+  try {
+    const data = await (await fetch("/api/v1/hosts")).json();
+    hosts = data.hosts || [];
+    render();
+  } catch (e) {
+    document.getElementById("tbody").innerHTML =
+      `<tr><td colspan="6" style="color:#EF4444">Envanter alınamadı: ${esc(e.message)}</td></tr>`;
+  }
+}
+
+function matches(h) {
+  if (riskFilter !== "all" && h.risk_level !== riskFilter) return false;
+  if (!query) return true;
+  const hay = [
+    h.ip, h.hostname, h.vendor, h.mac,
+    ...(h.services || []).flatMap(s =>
+      [s.service_name, s.product, s.version, String(s.port)]),
+    ...(h.web_findings || []).flatMap(f => [f.message, f.uri, f.osvdb_id]),
+  ].filter(Boolean).join(" ").toLowerCase();
+  return hay.includes(query);
+}
+
+function render() {
+  const visible = hosts.filter(matches);
+  document.getElementById("count").textContent = `${visible.length} cihaz bulundu`;
+  const tbody = document.getElementById("tbody");
+  if (!visible.length) {
+    tbody.innerHTML = `<tr><td colspan="6" style="color:#8B98A5;padding:28px;text-align:center">${
+      hosts.length ? "Filtreye uyan cihaz yok"
+                   : "Henüz taranmış cihaz yok — ⚡ Yeni Tarama panelinden başlayın"}</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = visible.map((h, i) => {
+    const portChips = (h.services || []).length
+      ? h.services.map(s => `<span class="pchip">${esc(s.port)}</span>`).join("")
+      : `<span class="sub">—</span>`;
+    const svcs = (h.services || []).map(s => s.service_name || "?").join(", ") || "—";
+    const who = [h.hostname, h.vendor].filter(Boolean).join(" · ");
+    const nCount = (h.web_findings || []).length;
+    return `<tr class="hrow ${i % 2 ? "alt" : ""}" data-i="${i}">
+      <td><span class="ip mono">${esc(h.ip)}</span>${nCount ? `<span class="nikto-pill" title="${nCount} nikto bulgusu">🌐 ${nCount}</span>` : ""}</td>
+      <td><div class="who">${esc(who || "—")}</div>${h.mac ? `<div class="sub mono">${esc(h.mac)}</div>` : ""}</td>
+      <td>${portChips}</td>
+      <td class="sub2">${esc(svcs)}</td>
+      <td><span class="risk ${esc(h.risk_level)}">${esc(RISK_TR[h.risk_level] || h.risk_level)}<i>${esc(h.risk_score)}</i></span></td>
+      <td class="act"><span>Detay →</span></td>
+    </tr>
+    <tr class="detail" data-d="${i}" style="display:none">
+      <td colspan="6">
+        <div class="dgrid">
+          <div class="dcard">
+            <div class="dtitle">Portlar &amp; Servisler</div>
+            ${(h.services || []).map(s => `
+              <div class="sline">
+                <span class="pchip">${esc(s.port)}/${esc(s.protocol)}</span>
+                <b>${esc(s.service_name || "-")}</b>
+                ${[s.product, s.version].filter(Boolean).length
+                  ? `<span class="sub">${esc([s.product, s.version].filter(Boolean).join(" "))}</span>` : ""}
+                <span class="risk ${esc(s.risk_level)}">${esc(RISK_TR[s.risk_level] || s.risk_level)}</span>
+                <div class="sub">${esc((s.reasons || []).join(" · "))}</div>
+              </div>`).join("") || `<div class="sub">Açık port yok</div>`}
+          </div>
+          <div class="dcard">
+            <div class="dtitle">🌐 Web Bulguları (Nikto)</div>
+            ${(h.web_findings || []).map(f => `
+              <div class="sline">
+                <span class="risk ${esc(f.severity)}">${esc(RISK_TR[f.severity] || f.severity)}</span>
+                ${f.osvdb_id && f.osvdb_id !== "0" ? `<span class="sub mono">OSVDB-${esc(f.osvdb_id)}</span>` : ""}
+                <div>${esc(f.message)}</div>
+                ${f.uri ? `<div class="sub mono">${esc(f.uri)}</div>` : ""}
+              </div>`).join("") || `<div class="sub">Nikto bulgusu yok</div>`}
+            <div class="sub meta">Tespit: ${esc(new Date(h.scanned_at).toLocaleString("tr-TR"))} · kaynak: ${esc(h.source_tool)}${h.scan_id ? " · tarama " + esc(h.scan_id.slice(0, 8)) : ""}</div>
+          </div>
+        </div>
+      </td>
+    </tr>`;
+  }).join("");
+
+  tbody.querySelectorAll("tr.hrow").forEach(tr =>
+    tr.addEventListener("click", () => {
+      const d = tbody.querySelector(`tr.detail[data-d="${tr.dataset.i}"]`);
+      d.style.display = d.style.display === "none" ? "table-row" : "none";
+    }));
+}
+
+// arama + risk çipleri
+document.getElementById("q").addEventListener("input", (e) => {
+  query = e.target.value.trim().toLowerCase();
+  render();
+});
+document.querySelectorAll(".chip").forEach(c =>
+  c.addEventListener("click", () => {
+    document.querySelectorAll(".chip").forEach(x => x.classList.remove("active"));
+    c.classList.add("active");
+    riskFilter = c.dataset.risk;
+    render();
+  }));
+
+// PDF: son tamamlanmış taramanın raporu
+document.getElementById("pdf-btn").addEventListener("click", async () => {
+  try {
+    const s = await (await fetch("/api/v1/scans?limit=20")).json();
+    const done = (s.scans || []).find(x => x.status === "done");
+    if (!done) { alert("Henüz tamamlanmış tarama yok."); return; }
+    window.open(`/api/v1/scans/${done.scan_id}/report`, "_blank");
+  } catch (e) { alert("Rapor alınamadı: " + e.message); }
+});
+
+load();
+</script>
+<script>
+/* Kabuk (iframe) içindeyiz: tekrar eden marka/nav gizlenir, data-go
+   bağlantıları üst sekme değişimine çevirilir (postMessage köprüsü). */
+if (window.top !== window.self) {
+  const s = document.createElement("style");
+  s.textContent = ".brand, nav{display:none!important}.panel-head{justify-content:flex-end!important}";
+  document.head.appendChild(s);
+}
+document.addEventListener("click", (e) => {
+  const el = e.target.closest("[data-go]");
+  if (!el) return;
+  if (window.top !== window.self) {
+    e.preventDefault();
+    window.top.postMessage({ go: el.dataset.go }, "*");
+  }
+});
+</script>
+<script src="/static/token.js"></script>
+</body>
+</html>

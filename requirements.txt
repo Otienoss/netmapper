@@ -1,0 +1,17 @@
+fastapi
+scapy
+uvicorn[standard]
+pydantic-settings
+sqlmodel
+sqlalchemy[asyncio]   # greenlet — SQLModel async desteği için gerekli
+aiosqlite
+reportlab
+impacket>=0.11        # AD modülü (GetUserSPNs/GetNPUsers/secretsdump)
+networkx>=3.0         # privesc yolu analizi
+bloodhound>=1.1       # bloodhound-python CLI (ACL grafiği toplama)
+ldap3>=2.9            # CVE taraması: DC NetBIOS + MachineAccountQuota okuma (NTLM bind)
+python-multipart>=0.0.9
+scapy>=2.5            # Pasif ARP dinleme + offline PCAP analizi (paket gönderimi yok)
+# --- test ---
+pytest
+httpx
